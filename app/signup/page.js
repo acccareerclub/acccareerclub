@@ -20,7 +20,7 @@ export const metadata = {
   openGraph: {
     title: 'ACC Career Club - Join the Community | Adamjee Cantonment College',
     description: 'Create your ACC Career Club account and unlock career opportunities, networking, and professional development resources.',
-    url: 'https://acccc.vercel.app/signup',
+    url: 'https://ccacc.vercel.app/signup',
     siteName: 'ACC Career Club',
     images: [
       {

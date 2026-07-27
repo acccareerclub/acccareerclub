@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 import { toast } from "react-hot-toast";
 import {
   FaEnvelope,
@@ -19,12 +20,16 @@ import {
   FaCheckCircle,
   FaHome,
   FaSignInAlt,
+  FaUserCircle,
+  FaSignOutAlt,
 } from "react-icons/fa";
 import { MdOutlineSchool } from "react-icons/md";
 import Logo from "../assets/logo/Careerclublogo.png";
 
 const SignupClient = () => {
   const router = useRouter();
+  const { user, loading, logout } = useAuth();
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -161,6 +166,11 @@ const SignupClient = () => {
     setShowConfirmPassword(!showConfirmPassword);
   };
 
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+  };
+
   const departments = [
     "Department of BBA",
     "Department of Accounting",
@@ -171,22 +181,22 @@ const SignupClient = () => {
     "Masters",
   ];
 
-  // Success Modal Component (inline) - More Watchable
+  // Success Modal Component
   const SuccessModal = () => {
     if (!showSuccessModal) return null;
 
     return (
       <>
-        {/* Backdrop - darker for better visibility */}
+        {/* Backdrop */}
         <div
           className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm animate-fadeIn"
           onClick={() => {}}
         />
 
-        {/* Modal - Better positioning and sizing */}
+        {/* Modal */}
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 animate-scaleIn">
           <div className="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto border-2 border-[#D3A16D]/20">
-            {/* Close button - more prominent */}
+            {/* Close button */}
             <button
               onClick={() => setShowSuccessModal(false)}
               className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full z-10"
@@ -207,7 +217,7 @@ const SignupClient = () => {
               </svg>
             </button>
 
-            {/* Success Icon - larger for visibility */}
+            {/* Success Icon */}
             <div className="flex justify-center mb-3 sm:mb-4">
               <div className="w-20 h-20 sm:w-24 sm:h-24 bg-green-100 rounded-full flex items-center justify-center animate-bounceIn shadow-lg">
                 <FaCheckCircle className="text-green-500 text-4xl sm:text-5xl" />
@@ -223,7 +233,7 @@ const SignupClient = () => {
               submitted successfully!
             </p>
 
-            {/* Information Box - with better contrast */}
+            {/* Information Box */}
             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
               <div className="flex items-start space-x-3">
                 <div className="bg-blue-100 p-2 rounded-full flex-shrink-0">
@@ -240,7 +250,7 @@ const SignupClient = () => {
               </div>
             </div>
 
-            {/* What happens next - with better visibility */}
+            {/* What happens next */}
             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-4 sm:mb-6">
               <p className="text-sm sm:text-base text-yellow-800">
                 <strong className="text-yellow-900">What happens next?</strong>
@@ -251,7 +261,7 @@ const SignupClient = () => {
               </p>
             </div>
 
-            {/* Action Buttons - more prominent */}
+            {/* Action Buttons */}
             <div className="space-y-3">
               <button
                 onClick={() => {
@@ -276,7 +286,7 @@ const SignupClient = () => {
               </button>
             </div>
 
-            {/* Optional: Small hint text */}
+            {/* Hint text */}
             <p className="text-center text-xs text-gray-400 mt-3">
               You can close this modal anytime
             </p>
@@ -333,11 +343,106 @@ const SignupClient = () => {
     );
   };
 
+  // If user is already logged in, show the logged in card
+  if (user && !loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#3D444C] to-[#994D35] px-6 py-8 text-center">
+              <div className="w-20 h-20 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <FaCheckCircle className="text-4xl text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mt-4">
+                Already Logged In
+              </h2>
+              <p className="text-white/80 text-sm mt-1">
+                You are currently signed in to your account
+              </p>
+            </div>
+
+            {/* User Info */}
+            <div className="px-6 py-6">
+              <div className="bg-[#E7E3D8]/30 rounded-xl p-4 mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-14 h-14 rounded-full bg-[#994D35] flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                    {user?.fullName?.[0] || <FaUserCircle className="text-3xl" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[#3D444C] font-semibold text-lg truncate">
+                      {user?.fullName || "User"}
+                    </p>
+                    <p className="text-gray-500 text-sm truncate">
+                      {user?.email || "No email"}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        {user?.role || "Student"}
+                      </span>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        {user?.studentId || "No ID"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <Link
+                  href="/"
+                  className="w-full bg-[#3D444C] text-white py-3 rounded-lg font-semibold hover:bg-[#994D35] transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <FaHome />
+                  <span>Go to Home</span>
+                </Link>
+
+                <Link
+                  href={`/profile/${user?.id}`}
+                  className="w-full border-2 border-[#994D35] text-[#994D35] py-3 rounded-lg font-semibold hover:bg-[#994D35] hover:text-white transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <FaUserCircle />
+                  <span>View Profile</span>
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <FaSignOutAlt />
+                  <span>Logout</span>
+                </button>
+              </div>
+
+              <p className="text-center text-xs text-gray-400 mt-4">
+                You can also logout from the menu in the header
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If loading, show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 flex items-center justify-center px-4 py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#994D35] border-t-transparent mx-auto"></div>
+          <p className="text-[#3D444C] mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not logged in, show the signup form
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 flex items-center justify-center px-4 py-12 lg:py-12 md:py-8 sm:py-6">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-2xl lg:rounded-2xl shadow-2xl overflow-hidden min-h-[90vh] lg:min-h-0">
-          {/* Left Side - Form - Full screen on mobile */}
+          {/* Left Side - Form */}
           <div className="p-4 sm:p-6 md:p-8 lg:p-12 xl:p-14 bg-white overflow-y-auto min-h-[90vh] lg:min-h-0 lg:max-h-full">
             {/* Logo and Header */}
             <div className="flex items-center space-x-3 mb-4 sm:mb-6">
@@ -368,7 +473,7 @@ const SignupClient = () => {
               </p>
             </div>
 
-            {/* Progress Steps - Hidden on mobile, visible on larger screens */}
+            {/* Progress Steps */}
             <div className="hidden sm:flex items-center justify-between mb-4 sm:mb-6 px-0.5">
               <div className="flex items-center space-x-1 sm:space-x-2">
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#994D35] text-white flex items-center justify-center text-xs sm:text-sm font-semibold">
@@ -398,7 +503,7 @@ const SignupClient = () => {
               </div>
             </div>
 
-            {/* Progress Steps - Mobile version (simplified) */}
+            {/* Progress Steps - Mobile */}
             <div className="flex sm:hidden items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 rounded-full bg-[#994D35] text-white flex items-center justify-center text-sm font-semibold">
@@ -448,7 +553,7 @@ const SignupClient = () => {
                 )}
               </div>
 
-              {/* Email and Phone - Two columns */}
+              {/* Email and Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label
@@ -764,7 +869,6 @@ const SignupClient = () => {
 
           {/* Right Side - Hero/Branding */}
           <div className="hidden lg:flex flex-col justify-center items-center p-12 bg-gradient-to-br from-[#3D444C] to-[#994D35] text-white relative overflow-hidden">
-            {/* Background Pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D3A16D] rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>

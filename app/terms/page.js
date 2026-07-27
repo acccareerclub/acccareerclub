@@ -18,7 +18,7 @@ export const metadata = {
   openGraph: {
     title: 'Terms of Service | ACC Career Club',
     description: 'Review the Terms of Service for using the ACC Career Club platform at Adamjee Cantonment College.',
-    url: 'https://acccc.vercel.app/terms',
+    url: 'https://ccacc.vercel.app/terms',
     siteName: 'ACC Career Club',
     images: [
       {

@@ -58,6 +58,14 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isActive: {
+      type: Boolean,
+      default: true, // New field for account status
+    },
+    sessionToken: {
+      type: String,
+      default: null, // Store the current session token
+    },
     noticeMail: {
       type: Boolean,
       default: true,
@@ -99,94 +107,99 @@ const UserSchema = new mongoose.Schema(
       },
     },
 
+    // app/models/User.js - Updated section for hscOrEquivalent and sscOrEquivalent
+
     // ==========================================
     // 5. ACADEMIC INFORMATION (Updated)
     // ==========================================
     academicInfo: {
-      // For University/College students
       university: {
-        institutionName: String,
-        department: String,
+        institutionName: {
+          type: String,
+          default: "National University",
+        },
+        collegeName: {
+          type: String,
+          default: "Adamjee Cantonment College",
+        },
+        registrationNumber: String,
         examSystem: {
           type: String,
           enum: ["semester", "yearly"],
           default: "semester",
         },
-        // For Semester system (1st, 2nd, 3rd, 4th...)
         semesters: [
           {
-            semesterNumber: {
-              type: Number,
-              required: function () {
-                return this.parent().examSystem === "semester";
-              },
-            },
-            examName: String, // e.g., "1st Semester", "2nd Semester"
+            semesterNumber: Number,
+            examName: String,
             year: String,
-            result: String, // GPA or CGPA
-            grade: String, // A+, A, B+, etc.
+            rollNumber: String,
+            result: String,
             remarks: String,
           },
         ],
-        // For Yearly system (1st year, 2nd year, 3rd year...)
         years: [
           {
-            yearNumber: {
-              type: Number,
-              required: function () {
-                return this.parent().examSystem === "yearly";
-              },
-            },
-            examName: String, // e.g., "1st Year", "2nd Year"
+            yearNumber: Number,
+            examName: String,
             year: String,
+            rollNumber: String,
             result: String,
-            grade: String,
             remarks: String,
           },
         ],
-        // Cumulative result (overall CGPA/GPA)
         cumulativeResult: {
           cgpa: String,
-          grade: String,
           totalCredits: String,
           remarks: String,
         },
-        // Additional info
         passingYear: String,
         session: String,
       },
-
-      // For HSC/Equivalent (only one result)
       hscOrEquivalent: {
         year: String,
-        group: String,
+        group: {
+          type: String,
+          enum: ["", "Humanities", "Business Studies", "Science"],
+          default: "",
+        },
         board: String,
-        result: String, // GPA
-        grade: String,
-        instituteName: String,
+        rollNumber: String,
+        institutionName: String,
+        result: String,
         remarks: String,
       },
-
-      // For SSC/Equivalent (only one result)
       sscOrEquivalent: {
         year: String,
-        group: String,
+        group: {
+          type: String,
+          enum: ["", "Humanities", "Business Studies", "Science"],
+          default: "",
+        },
         board: String,
-        result: String, // GPA
-        grade: String,
-        instituteName: String,
+        rollNumber: String,
+        institutionName: String,
+        result: String,
         remarks: String,
       },
     },
 
     // ==========================================
-    // 6. SKILLS & INTERESTS (Optional)
+    // 6. SKILLS & INTERESTS
     // ==========================================
     skills: {
       type: [String],
       default: [],
     },
     interests: {
+      type: [String],
+      default: [],
+    },
+    customSkills: {
+      type: [String],
+      default: [],
+    },
+    customInterests: {
       type: [String],
       default: [],
     },
@@ -215,13 +228,22 @@ const UserSchema = new mongoose.Schema(
     },
 
     // ==========================================
-    // 8. CAREER CLUB SPECIFIC (Optional)
+    // 8. CAREER CLUB SPECIFIC (Updated)
     // ==========================================
     careerClubInfo: {
       reasonToJoin: String,
       interestedCareerOrgOrPos: String,
       requiredSkillsForCareer: String,
       roadmapPlanning: String,
+      careerProspectsOfDept: String,
+    },
+
+    // ==========================================
+    // 9. DECLARATION
+    // ==========================================
+    declaration: {
+      type: Boolean,
+      default: false,
     },
   },
   {
@@ -231,6 +253,7 @@ const UserSchema = new mongoose.Schema(
 
 // Compound index for unique constraints
 UserSchema.index({ email: 1, studentId: 1 });
+UserSchema.index({ sessionToken: 1 });
 
 console.log("✅ User schema created with timestamps");
 

@@ -1,7 +1,7 @@
 // app/login/LoginClient.jsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,25 +14,38 @@ import {
   FaUserGraduate,
   FaArrowRight,
   FaIdCard,
+  FaUserCircle,
+  FaHome,
+  FaSignOutAlt,
+  FaCheckCircle,
 } from "react-icons/fa";
 import { MdOutlineSchool } from "react-icons/md";
 import toast from "react-hot-toast";
 import Logo from "../assets/logo/Careerclublogo.png";
+import { useSearchParams } from "next/navigation";
 
 const LoginClient = () => {
   const router = useRouter();
-  const { login, loading } = useAuth();
+  const { user, login, loading, logout } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
-  const [identifier, setIdentifier] = useState(""); // Changed from email to identifier
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get("session") === "expired";
 
   // Determine if input looks like an email or student ID
   const isEmail = identifier.includes("@") && identifier.includes(".");
   const inputType = isEmail ? "Email" : "Student ID";
+
+  useEffect(() => {
+    if (sessionExpired) {
+      toast.error("Your session has expired. Please login again.");
+    }
+  }, [sessionExpired]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,6 +95,109 @@ const LoginClient = () => {
     setShowPassword(!showPassword);
   };
 
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully");
+  };
+
+  // If user is already logged in, show the logged in card
+  if (user && !loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#3D444C] to-[#994D35] px-6 py-8 text-center">
+              <div className="w-20 h-20 mx-auto bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <FaCheckCircle className="text-4xl text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mt-4">
+                Already Logged In
+              </h2>
+              <p className="text-white/80 text-sm mt-1">
+                You are currently signed in to your account
+              </p>
+            </div>
+
+            {/* User Info */}
+            <div className="px-6 py-6">
+              <div className="bg-[#E7E3D8]/30 rounded-xl p-4 mb-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-14 h-14 rounded-full bg-[#994D35] flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                    {user?.fullName?.[0] || (
+                      <FaUserCircle className="text-3xl" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[#3D444C] font-semibold text-lg truncate">
+                      {user?.fullName || "User"}
+                    </p>
+                    <p className="text-gray-500 text-sm truncate">
+                      {user?.email || "No email"}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                        {user?.role || "Student"}
+                      </span>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                        {user?.studentId || "No ID"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <Link
+                  href="/"
+                  className="w-full bg-[#3D444C] text-white py-3 rounded-lg font-semibold hover:bg-[#994D35] transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <FaHome />
+                  <span>Go to Home</span>
+                </Link>
+
+                <Link
+                  href={`/profile/${user?.id}`}
+                  className="w-full border-2 border-[#994D35] text-[#994D35] py-3 rounded-lg font-semibold hover:bg-[#994D35] hover:text-white transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <FaUserCircle />
+                  <span>View Profile</span>
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-all duration-300 flex items-center justify-center space-x-2 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <FaSignOutAlt />
+                  <span>Logout</span>
+                </button>
+              </div>
+
+              {/* Info Text */}
+              <p className="text-center text-xs text-gray-400 mt-4">
+                You can also logout from the menu in the header
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If loading, show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 flex items-center justify-center px-4 py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#994D35] border-t-transparent mx-auto"></div>
+          <p className="text-[#3D444C] mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If not logged in, show the login form
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-0 bg-white rounded-2xl shadow-2xl overflow-hidden">

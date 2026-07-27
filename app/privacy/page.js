@@ -18,7 +18,7 @@ export const metadata = {
   openGraph: {
     title: 'Privacy Policy | ACC Career Club',
     description: 'Learn how ACC Career Club at Adamjee Cantonment College protects your privacy and handles your personal information.',
-    url: 'https://acccc.vercel.app/privacy',
+    url: 'https://ccacc.vercel.app/privacy',
     siteName: 'ACC Career Club',
     images: [
       {

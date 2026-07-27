@@ -27,10 +27,10 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line
   }, []);
 
+
   const checkAuth = async () => {
     try {
       const response = await fetch("/api/auth/me", {
-        // ✅ FIXED: Changed from /api/user/me to /api/auth/me
         credentials: "include",
       });
       const data = await response.json();
@@ -39,6 +39,16 @@ export const AuthProvider = ({ children }) => {
         setUser(data.user);
         setIsAuthenticated(true);
       } else {
+        // Check if session expired
+        if (data.message === "Session expired. Please login again.") {
+          toast.error("Session expired. Please login again.");
+          // Clear any stored tokens
+          await fetch("/api/auth/logout", {
+            method: "POST",
+            credentials: "include",
+          });
+          router.push("/login?session=expired");
+        }
         setUser(null);
         setIsAuthenticated(false);
       }

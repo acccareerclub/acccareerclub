@@ -1,17 +1,20 @@
-// app/api/auth/me/route.js
+// app/api/users/[userId]/route.js
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "../../../lib/authUtils";
 import { connectToDatabase } from "../../../lib/mongodb";
 import User from "../../../models/User";
+import { getCurrentUser } from "../../../lib/authUtils";
 
-export async function GET(request) {
+export async function GET(request, { params }) {
   try {
-    // Get token from cookie or Authorization header
+    // ✅ Fix: Await the params Promise
+    const { userId } = await params;
+
+    console.log("Fetching user with ID:", userId);
+
+    // Verify authentication
     const token =
       request.cookies.get("auth_token")?.value ||
       request.headers.get("Authorization")?.replace("Bearer ", "");
-
-    console.log("Token from cookie:", token ? "Present" : "Not present");
 
     if (!token) {
       return NextResponse.json(
@@ -23,11 +26,7 @@ export async function GET(request) {
       );
     }
 
-    // Verify token
     const decoded = getCurrentUser(token);
-
-    console.log("Decoded token:", decoded);
-
     if (!decoded) {
       return NextResponse.json(
         {
@@ -41,8 +40,8 @@ export async function GET(request) {
     // Connect to database
     await connectToDatabase();
 
-    // Get full user data
-    const user = await User.findById(decoded.userId).select("-password -__v");
+    // Find user by ID
+    const user = await User.findById(userId).select("-password -__v");
 
     if (!user) {
       return NextResponse.json(
@@ -51,28 +50,6 @@ export async function GET(request) {
           message: "User not found",
         },
         { status: 404 }
-      );
-    }
-
-    // Check if account is active
-    if (!user.isActive) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Account deactivated",
-        },
-        { status: 403 }
-      );
-    }
-
-    // Validate session token matches
-    if (user.sessionToken !== token) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Session expired. Please login again.",
-        },
-        { status: 401 }
       );
     }
 
@@ -88,15 +65,17 @@ export async function GET(request) {
         department: user.department,
         role: user.role,
         isVerified: user.isVerified,
-        isActive: user.isActive,
         noticeMail: user.noticeMail,
         personalInfo: user.personalInfo || {},
         guardianInfo: user.guardianInfo || {},
         academicInfo: user.academicInfo || {},
         skills: user.skills || [],
         interests: user.interests || [],
+        customSkills: user.customSkills || [],
+        customInterests: user.customInterests || [],
         experience: user.experience || {},
         careerClubInfo: user.careerClubInfo || {},
+        declaration: user.declaration || false,
         lastLogin: user.lastLogin,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
@@ -108,22 +87,24 @@ export async function GET(request) {
       {
         success: false,
         message: "Failed to get user data",
-        error: error.message,
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       },
       { status: 500 }
     );
   }
 }
 
-// PUT method for updating user profile
-export async function PUT(request) {
+export async function PUT(request, { params }) {
   try {
-    // Get token from cookie or Authorization header
+    // ✅ Fix: Await the params Promise
+    const { userId } = await params;
+
+    console.log("Updating user with ID:", userId);
+
+    // Verify authentication
     const token =
       request.cookies.get("auth_token")?.value ||
       request.headers.get("Authorization")?.replace("Bearer ", "");
-
-    console.log("Token from cookie:", token ? "Present" : "Not present");
 
     if (!token) {
       return NextResponse.json(
@@ -135,9 +116,7 @@ export async function PUT(request) {
       );
     }
 
-    // Verify token
     const decoded = getCurrentUser(token);
-
     if (!decoded) {
       return NextResponse.json(
         {
@@ -151,9 +130,8 @@ export async function PUT(request) {
     // Connect to database
     await connectToDatabase();
 
-    // Get the user
-    const user = await User.findById(decoded.userId);
-
+    // Find user
+    const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json(
         {
@@ -161,28 +139,6 @@ export async function PUT(request) {
           message: "User not found",
         },
         { status: 404 }
-      );
-    }
-
-    // Check if account is active
-    if (!user.isActive) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Account deactivated",
-        },
-        { status: 403 }
-      );
-    }
-
-    // Validate session
-    if (user.sessionToken !== token) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Session expired. Please login again.",
-        },
-        { status: 401 }
       );
     }
 
@@ -199,8 +155,11 @@ export async function PUT(request) {
       'academicInfo',
       'skills',
       'interests',
+      'customSkills',
+      'customInterests',
       'experience',
       'careerClubInfo',
+      'declaration',
       'noticeMail'
     ];
 
@@ -236,15 +195,17 @@ export async function PUT(request) {
       department: user.department,
       role: user.role,
       isVerified: user.isVerified,
-      isActive: user.isActive,
       noticeMail: user.noticeMail,
       personalInfo: user.personalInfo || {},
       guardianInfo: user.guardianInfo || {},
       academicInfo: user.academicInfo || {},
       skills: user.skills || [],
       interests: user.interests || [],
+      customSkills: user.customSkills || [],
+      customInterests: user.customInterests || [],
       experience: user.experience || {},
       careerClubInfo: user.careerClubInfo || {},
+      declaration: user.declaration || false,
       lastLogin: user.lastLogin,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
@@ -255,7 +216,6 @@ export async function PUT(request) {
       message: "Profile updated successfully",
       user: userData,
     });
-
   } catch (error) {
     console.error("Update user error:", error);
     return NextResponse.json(

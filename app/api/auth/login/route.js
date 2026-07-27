@@ -28,16 +28,14 @@ export async function POST(request) {
     // Build query based on identifier type
     let query = {};
     if (isEmail) {
-      // If it's an email, search by email (case insensitive)
       query = { email: cleanIdentifier.toLowerCase() };
     } else {
-      // If it's a student ID, search by studentId (case insensitive)
       query = { studentId: cleanIdentifier.toUpperCase() };
     }
     
     console.log(`🔍 Looking for user with ${isEmail ? 'email' : 'student ID'}:`, cleanIdentifier);
     
-    // Find user by email or student ID
+    // Find user
     const user = await User.findOne(query);
     
     if (!user) {
@@ -50,6 +48,15 @@ export async function POST(request) {
     
     console.log('✅ User found:', user.email, user.studentId);
     
+    // Check if account is active
+    if (!user.isActive) {
+      console.log('❌ Account is deactivated for user:', user.email);
+      return NextResponse.json({
+        success: false,
+        message: 'Your account has been deactivated. Please contact support.'
+      }, { status: 403 });
+    }
+    
     // Verify password
     const isPasswordValid = await comparePassword(password, user.password);
     
@@ -60,20 +67,22 @@ export async function POST(request) {
         message: 'Invalid email/student ID or password'
       }, { status: 401 });
     }
+    
     if (!user.isVerified) {
-      console.log('❌  User is not verified!');
+      console.log('❌ User is not verified!');
       return NextResponse.json({
         success: false,
-        message: 'User is not verified!'
+        message: 'Your account is not verified. Please wait for verification.'
       }, { status: 401 });
     }
     
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
-    
     // Generate JWT token
     const token = generateToken(user._id, user.email, user.role);
+    
+    // Update user with session token and last login
+    user.sessionToken = token;
+    user.lastLogin = new Date();
+    await user.save();
     
     // Set cookie
     await setAuthCookie(token);
@@ -88,7 +97,7 @@ export async function POST(request) {
       department: user.department,
       role: user.role,
       isVerified: user.isVerified,
-      profile: user.profile || {},
+      isActive: user.isActive,
       lastLogin: user.lastLogin,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt

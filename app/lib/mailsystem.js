@@ -1,12 +1,12 @@
 // app/lib/mailsystem.js
-import nodemailer from 'nodemailer';
+import nodemailer from "nodemailer";
 
 // Create transporter
 const createTransporter = () => {
   // For Gmail with App Password
-  if (process.env.EMAIL_SERVICE === 'gmail') {
+  if (process.env.EMAIL_SERVICE === "gmail") {
     return nodemailer.createTransport({
-      service: 'gmail',
+      service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_APP_PASSWORD,
@@ -16,9 +16,9 @@ const createTransporter = () => {
 
   // For other SMTP services
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.SMTP_PORT || "587"),
+    secure: process.env.SMTP_SECURE === "true",
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_APP_PASSWORD,
@@ -30,32 +30,35 @@ const createTransporter = () => {
 export const sendEmail = async ({ to, subject, html, text, from }) => {
   try {
     const transporter = createTransporter();
-    
+
     // Verify connection configuration
     await transporter.verify();
-    
+
     const mailOptions = {
       from: from || `"ACC Career Club" <${process.env.EMAIL_USER}>`,
-      to: Array.isArray(to) ? to.join(', ') : to,
+      to: Array.isArray(to) ? to.join(", ") : to,
       subject,
       html,
-      text: text || html.replace(/<[^>]*>/g, ''), // Fallback to plain text
+      text: text || html.replace(/<[^>]*>/g, ""), // Fallback to plain text
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully:', info.messageId);
+    console.log("✅ Email sent successfully:", info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('❌ Email sending failed:', error.message);
-    console.error('Error details:', error);
+    console.error("❌ Email sending failed:", error.message);
+    console.error("Error details:", error);
     return { success: false, error: error.message };
   }
 };
 
 // Send verification request email to prefects and IT secretaries
-export const sendVerificationRequestToPrefects = async (userData, adminEmails) => {
+export const sendVerificationRequestToPrefects = async (
+  userData,
+  adminEmails,
+) => {
   const subject = `New Member Registration Pending Verification - ${userData.fullName}`;
-  
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 10px;">
       <div style="background: linear-gradient(135deg, #3D444C, #994D35); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -104,7 +107,7 @@ export const sendVerificationRequestToPrefects = async (userData, adminEmails) =
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/verify-users" 
+          <a href="${process.env.NEXTAUTH_URL || "https://ccacc.vercel.app"}/dashboard/users" 
              style="background: #994D35; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
             Go to Verification Panel
           </a>
@@ -129,7 +132,7 @@ export const sendVerificationRequestToPrefects = async (userData, adminEmails) =
 // Send confirmation email to the student
 export const sendStudentConfirmationEmail = async (userData) => {
   const subject = `Registration Submitted - ACC Career Club`;
-  
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 10px;">
       <div style="background: linear-gradient(135deg, #3D444C, #994D35); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -185,7 +188,7 @@ export const sendStudentConfirmationEmail = async (userData) => {
 // Send verification success email
 export const sendVerificationSuccessEmail = async (userData) => {
   const subject = `Account Verified - Welcome to ACC Career Club! 🎉`;
-  
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 10px;">
       <div style="background: linear-gradient(135deg, #3D444C, #994D35); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -217,9 +220,9 @@ export const sendVerificationSuccessEmail = async (userData) => {
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard" 
+          <a href="${process.env.NEXTAUTH_URL || "http://ccacc.vercel.app"}/login" 
              style="background: #994D35; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-            Go to Dashboard
+            Login and go to profile. Then complete your profile.
           </a>
         </div>
         
@@ -234,6 +237,163 @@ export const sendVerificationSuccessEmail = async (userData) => {
 
   return await sendEmail({
     to: userData.email,
+    subject,
+    html,
+  });
+};
+
+
+// Send account status (activate/deactivate) email
+export const sendAccountStatusEmail = async ({
+  fullName,
+  email,
+  isActive,
+  reason,
+}) => {
+  const status = isActive ? "activated" : "deactivated";
+  const subject = `Account ${isActive ? "Activated" : "Deactivated"} - ACC Career Club`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 10px;">
+      <div style="background: linear-gradient(135deg, #3D444C, #994D35); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h1 style="color: #E7E3D8; margin: 0; font-size: 24px;">ACC Career Club</h1>
+        <p style="color: #D3A16D; margin: 5px 0 0; font-size: 16px;">Adamjee Cantonment College</p>
+      </div>
+      
+      <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="background: ${isActive ? "#28a745" : "#dc3545"}; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto;">
+            <span style="color: white; font-size: 32px;">${isActive ? "✓" : "✕"}</span>
+          </div>
+        </div>
+        
+        <h2 style="color: #3D444C; text-align: center; margin-top: 0;">Account ${isActive ? "Activated" : "Deactivated"}</h2>
+        
+        <p style="color: #555;">Dear ${fullName},</p>
+        
+        <p style="color: #555;">
+          Your ACC Career Club account has been <strong>${status}</strong> by an administrator.
+        </p>
+        
+        ${
+          !isActive && reason
+            ? `
+        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0; color: #856404;">
+            <strong>Reason provided by administrator:</strong><br>
+            ${reason}
+          </p>
+        </div>
+        `
+            : ""
+        }
+        
+        ${
+          isActive
+            ? `
+        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 15px; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0; color: #155724;">
+            <strong>Your account is now active!</strong><br>
+            You can now login and access all ACC Career Club features.
+          </p>
+        </div>
+        `
+            : `
+        <div style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0; color: #721c24;">
+            <strong>Your account has been deactivated.</strong><br>
+            Please contact the club administration if you believe this is a mistake.
+          </p>
+        </div>
+        `
+        }
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        
+        <p style="color: #777; font-size: 12px; text-align: center; margin: 0;">
+          This is an automated message from ACC Career Club. Please do not reply to this email.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: email,
+    subject,
+    html,
+  });
+};
+
+
+// Send welcome email with credentials for manually added users
+export const sendWelcomeEmail = async ({ fullName, email, password, studentId, role }) => {
+  const subject = `Welcome to ACC Career Club - Your Account Details`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; border-radius: 10px;">
+      <div style="background: linear-gradient(135deg, #3D444C, #994D35); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+        <h1 style="color: #E7E3D8; margin: 0; font-size: 24px;">ACC Career Club</h1>
+        <p style="color: #D3A16D; margin: 5px 0 0; font-size: 16px;">Adamjee Cantonment College</p>
+      </div>
+      
+      <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <div style="background: #28a745; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto;">
+            <span style="color: white; font-size: 32px;">✓</span>
+          </div>
+        </div>
+        
+        <h2 style="color: #3D444C; text-align: center; margin-top: 0;">Welcome to ACC Career Club!</h2>
+        
+        <p style="color: #555;">Dear ${fullName},</p>
+        
+        <p style="color: #555;">Your account has been created successfully by the ACC Career Club administration. You are now officially a member of our community! 🎉</p>
+        
+        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 15px; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0; color: #155724;">
+            <strong>Your Login Credentials:</strong><br>
+            <strong>Email:</strong> ${email}<br>
+            <strong>Student ID:</strong> ${studentId}<br>
+            <strong>Password:</strong> <span style="background: #f5f5f5; padding: 2px 8px; border-radius: 4px; font-family: monospace;">${password}</span><br>
+            <strong>Role:</strong> ${role.charAt(0).toUpperCase() + role.slice(1)}
+          </p>
+        </div>
+        
+        <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin: 20px 0;">
+          <p style="margin: 0; color: #856404;">
+            <strong>⚠️ Important Security Notice:</strong><br>
+            Please change your password immediately after your first login for security reasons.
+          </p>
+        </div>
+        
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h4 style="color: #3D444C; margin-top: 0;">Next Steps:</h4>
+          <ol style="color: #555; padding-left: 20px;">
+            <li style="margin-bottom: 8px;">Login to your account using the credentials above</li>
+            <li style="margin-bottom: 8px;">Change your password immediately</li>
+            <li style="margin-bottom: 8px;">Complete your profile with additional information</li>
+            <li style="margin-bottom: 8px;">Explore career opportunities and resources</li>
+          </ol>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.NEXTAUTH_URL || "https://ccacc.vercel.app"}/login" 
+             style="background: #994D35; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Login Now
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+        
+        <p style="color: #777; font-size: 12px; text-align: center; margin: 0;">
+          This is an automated message from ACC Career Club. Please do not reply to this email.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return await sendEmail({
+    to: email,
     subject,
     html,
   });
