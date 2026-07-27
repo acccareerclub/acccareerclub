@@ -1,10 +1,10 @@
 // app/login/LoginClient.jsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import {
   FaEnvelope,
@@ -22,11 +22,13 @@ import {
 import { MdOutlineSchool } from "react-icons/md";
 import toast from "react-hot-toast";
 import Logo from "../assets/logo/Careerclublogo.png";
-import { useSearchParams } from "next/navigation";
 
-const LoginClient = () => {
+// Create a separate component that uses useSearchParams
+const LoginContent = () => {
   const router = useRouter();
   const { user, login, loading, logout } = useAuth();
+  const searchParams = useSearchParams();
+  const sessionExpired = searchParams.get("session") === "expired";
 
   const [showPassword, setShowPassword] = useState(false);
   const [identifier, setIdentifier] = useState("");
@@ -34,8 +36,6 @@ const LoginClient = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const searchParams = useSearchParams();
-  const sessionExpired = searchParams.get("session") === "expired";
 
   // Determine if input looks like an email or student ID
   const isEmail = identifier.includes("@") && identifier.includes(".");
@@ -441,6 +441,22 @@ const LoginClient = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Main component with Suspense boundary
+const LoginClient = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 flex items-center justify-center px-4 py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#994D35] border-t-transparent mx-auto"></div>
+          <p className="text-[#3D444C] mt-4">Loading...</p>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 };
 

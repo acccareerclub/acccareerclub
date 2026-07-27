@@ -48,6 +48,10 @@ export const metadata = {
     index: true,
     follow: true,
   },
+};
+
+// Move themeColor to viewport export
+export const viewport = {
   themeColor: "#3D444C",
 };
 
