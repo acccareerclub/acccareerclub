@@ -24,6 +24,7 @@ import {
   FaPencilAlt,
   FaCamera,
   FaSpinner,
+  FaKey,
 } from "react-icons/fa";
 import { MdOutlineEmail, MdPhone as MdPhoneIcon } from "react-icons/md";
 import {
@@ -31,6 +32,8 @@ import {
   EditBoardExamModal,
   EditSemesterModal,
 } from "../../components/AcademicModals";
+import ChangePasswordModal from "../../components/ChangePasswordModal";
+import EditEmailModal from "../../components/EditEmailModal";
 import { SkillsModal } from "../../components/SkillsModal";
 import Image from "next/image";
 import Link from "next/link";
@@ -127,6 +130,8 @@ const ProfileClient = () => {
   const [showSkillsModal, setShowSkillsModal] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editingData, setEditingData] = useState(null);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showEditEmailModal, setShowEditEmailModal] = useState(false);
 
   // Fetch user data
   useEffect(() => {
@@ -856,6 +861,18 @@ const ProfileClient = () => {
                     </p>
                   </div>
                 </div>
+
+                {isOwnProfile && (
+                  <div className="flex mt-2">
+                    <button
+                      onClick={() => setShowChangePasswordModal(true)}
+                      className="flex m-auto items-center gap-2 bg-[#3D444C] text-white px-5 py-2.5 rounded-lg hover:bg-[#994D35] transition-all duration-300 hover:scale-105 shadow-md"
+                    >
+                      <FaKey />
+                      <span>Change Password</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -893,8 +910,18 @@ const ProfileClient = () => {
                   <label className="block text-sm font-medium text-gray-600 mb-1">
                     Email
                   </label>
-                  <p className="text-[#3D444C] font-medium">{user?.email}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[#3D444C] font-medium">{user?.email}</p>
+
+                    <button
+                      onClick={() => setShowEditEmailModal(true)}
+                      className="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1"
+                    >
+                      <FaPencilAlt className="text-xs" /> Change
+                    </button>
+                  </div>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">
                     Phone
@@ -1964,14 +1991,13 @@ const ProfileClient = () => {
               />
             </div>
 
-              <button
-                onClick={handleRemoveImage}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-2.5 rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 whitespace-nowrap shadow-lg"
-              >
-                <FaTrash className="text-sm" />
-                Remove Picture
-              </button>
-            
+            <button
+              onClick={handleRemoveImage}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-2.5 rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 whitespace-nowrap shadow-lg"
+            >
+              <FaTrash className="text-sm" />
+              Remove Picture
+            </button>
           </div>
         </div>
       )}
@@ -2051,6 +2077,20 @@ const ProfileClient = () => {
         interests={user?.interests || []}
         customSkills={user?.customSkills || []}
         customInterests={user?.customInterests || []}
+      />
+
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        userEmail={user?.email}
+        userId={userId}
+      />
+
+      <EditEmailModal
+        isOpen={showEditEmailModal}
+        onClose={() => setShowEditEmailModal(false)}
+        currentEmail={user?.email}
+        userId={userId}
       />
     </div>
   );

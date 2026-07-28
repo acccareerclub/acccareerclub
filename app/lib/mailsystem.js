@@ -242,7 +242,6 @@ export const sendVerificationSuccessEmail = async (userData) => {
   });
 };
 
-
 // Send account status (activate/deactivate) email
 export const sendAccountStatusEmail = async ({
   fullName,
@@ -324,9 +323,14 @@ export const sendAccountStatusEmail = async ({
   });
 };
 
-
 // Send welcome email with credentials for manually added users
-export const sendWelcomeEmail = async ({ fullName, email, password, studentId, role }) => {
+export const sendWelcomeEmail = async ({
+  fullName,
+  email,
+  password,
+  studentId,
+  role,
+}) => {
   const subject = `Welcome to ACC Career Club - Your Account Details`;
 
   const html = `
@@ -397,4 +401,598 @@ export const sendWelcomeEmail = async ({ fullName, email, password, studentId, r
     subject,
     html,
   });
+};
+
+// app/lib/mailsystem.js - Updated sendNoticeEmail function
+
+// Send notice email to all users with noticeMail enabled
+export const sendNoticeEmail = async ({
+  noticeTitle,
+  noticeContent,
+  noticeCategory,
+  noticePriority,
+  createdByName,
+  createdByRole,
+  noticeId,
+  noticeImages,
+  recipientEmails,
+  recipientId,
+}) => {
+  const subject = `📢 New Notice: ${noticeTitle} - ACC Career Club`;
+
+  // Format category for display
+  const categoryLabels = {
+    general: "General",
+    academic: "Academic",
+    event: "Event",
+    career: "Career",
+    important: "Important",
+    club: "Club",
+  };
+
+  const categoryEmojis = {
+    general: "📌",
+    academic: "📚",
+    event: "🎪",
+    career: "💼",
+    important: "⭐",
+    club: "🏛️",
+  };
+
+  // Get role display name
+  const roleDisplay = {
+    prefect: "Prefect",
+    itsecretary: "IT Secretary",
+    modarator: "Moderator",
+  };
+
+  const roleDisplayName = roleDisplay[createdByRole] || createdByRole;
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+      <title>New Notice</title>
+      <style>
+        /* Reset styles */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #f0f0f0;
+          -webkit-text-size-adjust: 100%;
+          -ms-text-size-adjust: 100%;
+        }
+        
+        /* Main container */
+        .container {
+          max-width: 600px;
+          width: 100%;
+          margin: 0 auto;
+          background: #ffffff;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        
+        /* Header */
+        .header {
+          background: linear-gradient(135deg, #3D444C, #994D35);
+          padding: 32px 24px;
+          text-align: center;
+        }
+        
+        .header h1 {
+          color: #E7E3D8;
+          margin: 0;
+          font-size: 26px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+        
+        .header p {
+          color: #D3A16D;
+          margin: 8px 0 0 0;
+          font-size: 15px;
+          font-weight: 400;
+        }
+        
+        /* Content */
+        .content {
+          padding: 30px 24px 32px;
+        }
+        
+        /* Notice Title */
+        .notice-title {
+          color: #3D444C;
+          font-size: 24px;
+          font-weight: 700;
+          margin: 0 0 16px 0;
+          line-height: 1.3;
+          text-align: center;
+        }
+        
+        /* Meta info - Author and Category */
+        .notice-meta {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          align-items: center;
+          gap: 10px 14px;
+          margin: 0 0 24px 0;
+          padding: 14px 0;
+          border-top: 2px solid #f0f0f0;
+          border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .meta-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          color: #6B7280;
+          white-space: nowrap;
+        }
+        
+        .category-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: #E7E3D8;
+          color: #3D444C;
+          padding: 4px 14px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+        
+        .author-info {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: #4B5563;
+          font-size: 13px;
+        }
+        
+        .author-info .name {
+          color: #3D444C;
+          font-weight: 600;
+        }
+        
+        .author-info .role {
+          color: #994D35;
+          font-size: 11px;
+          font-weight: 500;
+          background: #FEF3C7;
+          padding: 2px 8px;
+          border-radius: 12px;
+          margin-left: 2px;
+        }
+        
+        /* Divider */
+        .divider {
+          width: 60px;
+          height: 3px;
+          background: linear-gradient(90deg, #D3A16D, #994D35);
+          margin: 0 auto 20px auto;
+          border-radius: 2px;
+        }
+        
+        /* Notice Content */
+        .notice-content {
+          color: #4B5563;
+          line-height: 1.9;
+          margin: 0 0 28px 0;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          font-size: 15px;
+          text-align: left;
+        }
+        
+        /* Images Grid */
+        .notice-images {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+          gap: 10px;
+          margin: 0 0 28px 0;
+        }
+        
+        .notice-images .image-wrapper {
+          position: relative;
+          border-radius: 10px;
+          overflow: hidden;
+          background: #f3f4f6;
+          aspect-ratio: 4/3;
+        }
+        
+        .notice-images img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+        
+        .notice-images .more-overlay {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #f3f4f6;
+          border-radius: 10px;
+          aspect-ratio: 4/3;
+          color: #6B7280;
+          font-weight: 600;
+          font-size: 14px;
+          border: 2px dashed #d1d5db;
+        }
+        
+        /* Buttons */
+        .button-container {
+          text-align: center;
+          margin: 28px 0 24px 0;
+        }
+        
+        .view-button {
+          display: inline-block;
+          background: #994D35;
+          color: #ffffff !important;
+          padding: 14px 40px;
+          text-decoration: none;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 16px;
+          transition: background 0.3s ease;
+          text-align: center;
+          box-shadow: 0 4px 12px rgba(153, 77, 53, 0.25);
+          letter-spacing: 0.3px;
+        }
+        
+        .view-button:hover {
+          background: #3D444C;
+          box-shadow: 0 4px 16px rgba(61, 68, 76, 0.3);
+        }
+        
+        /* Notice Footer Note */
+        .notice-footer {
+          background: #F9FAFB;
+          border-radius: 10px;
+          padding: 16px 20px;
+          margin: 24px 0 0 0;
+          border-left: 4px solid #D3A16D;
+        }
+        
+        .notice-footer p {
+          margin: 0;
+          color: #6B7280;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+        
+        .notice-footer a {
+          color: #994D35;
+          text-decoration: underline;
+          font-weight: 500;
+        }
+        
+        /* Main Footer */
+        .footer {
+          text-align: center;
+          padding: 20px 0 0 0;
+          border-top: 1px solid #E5E7EB;
+          margin-top: 28px;
+        }
+        
+        .footer p {
+          color: #9CA3AF;
+          font-size: 11px;
+          margin: 4px 0;
+          line-height: 1.5;
+        }
+        
+        .footer .club-name {
+          color: #6B7280;
+          font-weight: 500;
+        }
+        
+        /* ========================================
+                   MOBILE RESPONSIVE STYLES
+                   ======================================== */
+        @media only screen and (max-width: 600px) {
+          .container {
+            border-radius: 0;
+            margin: 0 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+          }
+          
+          .header {
+            padding: 28px 16px;
+          }
+          
+          .header h1 {
+            font-size: 22px;
+          }
+          
+          .header p {
+            font-size: 13px;
+          }
+          
+          .content {
+            padding: 20px 16px 24px;
+          }
+          
+          .notice-title {
+            font-size: 20px;
+            text-align: center;
+          }
+          
+          /* Mobile: Stack meta items vertically, center aligned */
+          .notice-meta {
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 0;
+            border-top-width: 2px;
+            border-bottom-width: 2px;
+          }
+          
+          .meta-item {
+            font-size: 12px;
+            white-space: normal;
+          }
+          
+          .category-badge {
+            font-size: 11px;
+            padding: 3px 12px;
+          }
+          
+          .author-info {
+            font-size: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+          
+          .author-info .role {
+            font-size: 10px;
+          }
+          
+          /* Center align content on mobile */
+          .notice-content {
+            font-size: 14px;
+            line-height: 1.8;
+            text-align: left;
+            padding: 0 2px;
+          }
+          
+          .divider {
+            width: 40px;
+            margin: 0 auto 16px auto;
+          }
+          
+          .notice-images {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+          
+          .notice-images .image-wrapper {
+            aspect-ratio: 4/3;
+            border-radius: 8px;
+          }
+          
+          .notice-images .more-overlay {
+            border-radius: 8px;
+            font-size: 12px;
+          }
+          
+          .view-button {
+            display: block;
+            padding: 13px 20px;
+            font-size: 15px;
+            border-radius: 8px;
+          }
+          
+          .notice-footer {
+            padding: 12px 14px;
+            border-left-width: 3px;
+          }
+          
+          .notice-footer p {
+            font-size: 12px;
+          }
+        }
+        
+        @media only screen and (max-width: 400px) {
+          .container {
+            margin: 0 4px;
+          }
+          
+          .header {
+            padding: 20px 12px;
+          }
+          
+          .header h1 {
+            font-size: 18px;
+          }
+          
+          .header p {
+            font-size: 12px;
+          }
+          
+          .content {
+            padding: 16px 12px 20px;
+          }
+          
+          .notice-title {
+            font-size: 17px;
+          }
+          
+          .notice-images {
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+          }
+          
+          .meta-item {
+            font-size: 11px;
+          }
+          
+          .notice-content {
+            font-size: 13px;
+          }
+          
+          .view-button {
+            font-size: 14px;
+            padding: 11px 16px;
+          }
+        }
+        
+        /* Outlook and older clients */
+        .ReadMsgBody {
+          width: 100%;
+        }
+        .ExternalClass {
+          width: 100%;
+        }
+        
+        /* Fix for Gmail app */
+        u + .body .container {
+          width: 100% !important;
+        }
+        
+        /* Ensure images are responsive in all clients */
+        img {
+          max-width: 100%;
+          height: auto;
+        }
+      </style>
+    </head>
+    <body style="margin:0;padding:0;background-color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f0f0;padding:16px 8px;">
+        <tr>
+          <td align="center" style="padding:0;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+              <!-- Header -->
+              <tr>
+                <td style="background:linear-gradient(135deg, #3D444C, #994D35);padding:32px 24px;text-align:center;">
+                  <h1 style="color:#E7E3D8;margin:0;font-size:26px;font-weight:700;letter-spacing:0.5px;">📢 ACC Career Club</h1>
+                  <p style="color:#D3A16D;margin:8px 0 0 0;font-size:15px;font-weight:400;">Adamjee Cantonment College</p>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding:30px 24px 32px;">
+                  <!-- Title -->
+                  <h2 style="color:#3D444C;font-size:24px;font-weight:700;margin:0 0 16px 0;line-height:1.3;text-align:center;">${noticeTitle}</h2>
+                  
+                  <!-- Divider -->
+                  <div style="width:60px;height:3px;background:linear-gradient(90deg, #D3A16D, #994D35);margin:0 auto 20px auto;border-radius:2px;"></div>
+                  
+                  <!-- Meta: Author and Category -->
+                  <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px 14px;margin:0 0 24px 0;padding:14px 0;border-top:2px solid #f0f0f0;border-bottom:2px solid #f0f0f0;">
+                    <span style="display:inline-flex;align-items:center;gap:4px;background:#E7E3D8;color:#3D444C;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;">
+                      ${categoryEmojis[noticeCategory] || "📌"} ${categoryLabels[noticeCategory] || noticeCategory}
+                    </span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;color:#4B5563;font-size:13px;flex-wrap:wrap;justify-content:center;">
+                      👤 <span style="color:#3D444C;font-weight:600;">${createdByName}</span>
+                      <span style="color:#994D35;font-size:11px;font-weight:500;background:#FEF3C7;padding:2px 8px;border-radius:12px;">${roleDisplayName}</span>
+                    </span>
+                  </div>
+                  
+                  <!-- Content -->
+                  <div style="color:#4B5563;line-height:1.9;margin:0 0 28px 0;white-space:pre-wrap;word-wrap:break-word;font-size:15px;text-align:left;">
+                    ${noticeContent}
+                  </div>
+                  
+                  <!-- Images -->
+                  ${
+                    noticeImages && noticeImages.length > 0
+                      ? `
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:10px;margin:0 0 28px 0;">
+                      ${noticeImages
+                        .slice(0, 4)
+                        .map(
+                          (img) => `
+                        <div style="position:relative;border-radius:10px;overflow:hidden;background:#f3f4f6;aspect-ratio:4/3;">
+                          <img src="${img.url}" alt="Notice image" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                        </div>
+                      `,
+                        )
+                        .join("")}
+                      ${
+                        noticeImages.length > 4
+                          ? `
+                        <div style="display:flex;align-items:center;justify-content:center;background:#f3f4f6;border-radius:10px;aspect-ratio:4/3;color:#6B7280;font-weight:600;font-size:14px;border:2px dashed #d1d5db;">
+                          +${noticeImages.length - 4} more
+                        </div>
+                      `
+                          : ""
+                      }
+                    </div>
+                  `
+                      : ""
+                  }
+                  
+                  <!-- Buttons -->
+                  <div style="text-align:center;margin:28px 0 24px 0;">
+                    <a href="${process.env.NEXTAUTH_URL || "https://ccacc.vercel.app"}/all-notice" style="display:inline-block;background:#994D35;color:#ffffff !important;padding:14px 40px;text-decoration:none;border-radius:10px;font-weight:600;font-size:16px;text-align:center;box-shadow:0 4px 12px rgba(153,77,53,0.25);letter-spacing:0.3px;">
+                      View All Notices
+                    </a>
+                  </div>
+                  
+                  <!-- Footer Note -->
+                  <div style="background:#F9FAFB;border-radius:10px;padding:16px 20px;margin:24px 0 0 0;border-left:4px solid #D3A16D;">
+                    <p style="margin:0;color:#6B7280;font-size:13px;line-height:1.6;">
+                      💡 You're receiving this email because you have <strong>Notice Mail</strong> enabled. 
+                      <a href="${process.env.NEXTAUTH_URL || "https://ccacc.vercel.app"}/settings/${recipientId}" style="color:#994D35;text-decoration:underline;font-weight:500;">Manage preferences</a>
+                    </p>
+                  </div>
+                  
+                  <!-- Footer -->
+                  <div style="text-align:center;padding:20px 0 0 0;border-top:1px solid #E5E7EB;margin-top:28px;">
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      This is an automated message from ACC Career Club.
+                    </p>
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      © ${new Date().getFullYear()} ACC Career Club - Adamjee Cantonment College
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  // Send email to all recipients (batch sending)
+  // Split into chunks of 50 to avoid email provider limits
+  const chunkSize = 50;
+  const results = [];
+
+  for (let i = 0; i < recipientEmails.length; i += chunkSize) {
+    const chunk = recipientEmails.slice(i, i + chunkSize);
+    const result = await sendEmail({
+      to: chunk,
+      subject,
+      html,
+    });
+    results.push(result);
+  }
+
+  // Check if all chunks were successful
+  const allSuccess = results.every((r) => r.success);
+
+  return {
+    success: allSuccess,
+    totalRecipients: recipientEmails.length,
+    results,
+  };
 };

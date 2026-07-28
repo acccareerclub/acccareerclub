@@ -186,7 +186,7 @@ const Header = () => {
                   </Link>
 
                   <Link
-                    href="/settings"
+                    href={`/settings/${user?.id}`}
                     className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-[#E7E3D8] transition-all duration-200 group"
                     onClick={() => setIsDropdownOpen(false)}
                   >
@@ -372,7 +372,7 @@ const Header = () => {
                     Profile
                   </Link>
                   <Link
-                    href="/settings"
+                    href={`/settings/${user?.id}`}
                     className="block px-3 py-1 text-sm text-[#3D444C] hover:bg-[#E7E3D8] rounded-lg transition-colors"
                     onClick={closeMenu}
                   >

@@ -70,6 +70,14 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    jobMail: {
+      type: Boolean,
+      default: true,
+    },
+    newsletterMail: {
+      type: Boolean,
+      default: true,
+    },
 
     // ==========================================
     // 3. ADDITIONAL PERSONAL INFO (Optional)
