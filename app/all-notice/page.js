@@ -11,6 +11,7 @@ export const viewport = {
   themeColor: "#3D444C",
 };
 
+// The page doesn't need to be a client component
 const AllNoticePage = () => {
   return <AllNoticeClient />;
 };

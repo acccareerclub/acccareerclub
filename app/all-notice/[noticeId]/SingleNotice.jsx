@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation"; // Remove useRouter
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -19,7 +19,7 @@ import { format, formatDistanceToNow } from "date-fns";
 
 const SingleNotice = () => {
   const params = useParams();
-  const router = useRouter();
+  // Remove router - not needed
   const noticeId = params?.noticeId;
 
   const [notice, setNotice] = useState(null);

@@ -1,7 +1,7 @@
 // app/all-notice/AllNoticeClient.jsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -38,7 +38,8 @@ const SORT_OPTIONS = [
   { value: "priority", label: "By Priority" },
 ];
 
-const AllNoticeClient = () => {
+// Create a separate component that uses useSearchParams
+const AllNoticeContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -383,6 +384,22 @@ const AllNoticeClient = () => {
         )}
       </div>
     </div>
+  );
+};
+
+// Main component with Suspense boundary
+const AllNoticeClient = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#994D35] border-t-transparent mx-auto"></div>
+          <p className="text-[#3D444C] mt-4 font-medium">Loading notices...</p>
+        </div>
+      </div>
+    }>
+      <AllNoticeContent />
+    </Suspense>
   );
 };
 
