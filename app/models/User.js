@@ -1,8 +1,6 @@
 // app/models/User.js
 import mongoose from "mongoose";
 
-console.log("🔄 Loading User model...");
-
 const UserSchema = new mongoose.Schema(
   {
     // ==========================================
@@ -51,8 +49,11 @@ const UserSchema = new mongoose.Schema(
     // ==========================================
     role: {
       type: String,
-      // enum: ["prefect", "itsecretary", "modarator", "member"],
       default: "member",
+    },
+    executiveBranch: {
+      type: String,
+      default: null,
     },
     isVerified: {
       type: Boolean,
@@ -244,6 +245,41 @@ const UserSchema = new mongoose.Schema(
       requiredSkillsForCareer: String,
       roadmapPlanning: String,
       careerProspectsOfDept: String,
+    },
+
+    // ==========================================
+    // 8.1 ALUMNI INFORMATION (Only for alumni)
+    // ==========================================
+    alumniInfo: {
+      batch: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      currentJobCompany: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      currentDesignation: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      isUnemployed: {
+        type: Boolean,
+        default: false,
+      },
+      contactPhone: {
+        type: String,
+        trim: true,
+        default: "",
+      },
+      passedYear: {
+        type: String,
+        trim: true,
+        default: "",
+      },
     },
 
     // ==========================================

@@ -68,7 +68,7 @@ export async function PUT(request) {
       return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 });
     }
 
-    const allowedRoles = ["prefect", "itsecretary", "modarator"];
+    const allowedRoles = ["prefect", "itsecretary", "modarator", "assistant_prefect"];
     if (!allowedRoles.includes(decoded.role)) {
       return NextResponse.json(
         { success: false, message: "You don't have permission to edit notices" },

@@ -124,7 +124,7 @@ export async function POST(request) {
     // Send email notifications (don't await to avoid blocking response)
     // Get all prefects and IT secretaries
     const admins = await User.find({
-      role: { $in: ['prefect', 'itsecretary'] }
+      role: { $in: ['prefect', 'itsecretary', "assistant_prefect"] }
     }).select('email');
 
     const adminEmails = admins.map(admin => admin.email);

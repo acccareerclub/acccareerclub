@@ -28,7 +28,7 @@ export async function POST(request) {
     }
 
     // Check if user has admin role
-    const allowedRoles = ["prefect", "itsecretary", "modarator"];
+    const allowedRoles = ["prefect", "itsecretary", "modarator", "assistant_prefect"];
     if (!allowedRoles.includes(decoded.role)) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },

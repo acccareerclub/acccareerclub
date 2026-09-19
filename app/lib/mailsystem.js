@@ -996,3 +996,194 @@ export const sendNoticeEmail = async ({
     results,
   };
 };
+
+// ==========================================
+// Send "Welcome to Alumni" email
+// ==========================================
+export const sendAlumniWelcomeEmail = async ({
+  fullName,
+  email,
+  batch,
+  passedYear,
+  currentJobCompany,
+  currentDesignation,
+  isUnemployed,
+}) => {
+  const subject = `🎓 Welcome to ACC Career Club Alumni Network!`;
+
+  // Build job-info block
+  let jobInfoHTML = "";
+  if (isUnemployed) {
+    jobInfoHTML = `
+      <div style="background: #F3F4F6; border-radius: 8px; padding: 16px 20px; margin: 20px 0; text-align: center;">
+        <p style="margin: 0; color: #4B5563; font-size: 14px;">
+          <strong style="color: #3D444C;">Current Status:</strong> 
+          <span style="color: #6B7280;">Currently seeking opportunities</span>
+        </p>
+      </div>
+    `;
+  } else if (currentJobCompany || currentDesignation) {
+    jobInfoHTML = `
+      <div style="background: #F3F4F6; border-radius: 8px; padding: 16px 20px; margin: 20px 0;">
+        <p style="margin: 0 0 6px 0; color: #3D444C; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+          Current Professional Role
+        </p>
+        ${
+          currentDesignation
+            ? `<p style="margin: 4px 0; color: #4B5563; font-size: 14px;"><strong style="color: #994D35;">💼 Designation:</strong> ${currentDesignation}</p>`
+            : ""
+        }
+        ${
+          currentJobCompany
+            ? `<p style="margin: 4px 0; color: #4B5563; font-size: 14px;"><strong style="color: #994D35;">🏢 Company:</strong> ${currentJobCompany}</p>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  // Build batch/passed-year block
+  let batchInfoHTML = "";
+  if (batch || passedYear) {
+    batchInfoHTML = `
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0;">
+        ${
+          batch
+            ? `<div style="flex: 1; min-width: 140px; background: #E7E3D8; border-radius: 8px; padding: 12px 16px; text-align: center;">
+                 <p style="margin: 0; color: #6B7280; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Batch</p>
+                 <p style="margin: 4px 0 0 0; color: #3D444C; font-size: 20px; font-weight: 800;">${batch}</p>
+               </div>`
+            : ""
+        }
+        ${
+          passedYear
+            ? `<div style="flex: 1; min-width: 140px; background: #E7E3D8; border-radius: 8px; padding: 12px 16px; text-align: center;">
+                 <p style="margin: 0; color: #6B7280; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Passed Year</p>
+                 <p style="margin: 4px 0 0 0; color: #3D444C; font-size: 20px; font-weight: 800;">${passedYear}</p>
+               </div>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Welcome to Alumni Network</title>
+    </head>
+    <body style="margin:0;padding:0;background-color:#f0f0f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f0f0;padding:16px 8px;">
+        <tr>
+          <td align="center" style="padding:0;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+
+              <!-- Header -->
+              <tr>
+                <td style="background:linear-gradient(135deg, #3D444C, #994D35);padding:36px 24px;text-align:center;">
+                  <div style="font-size:48px;line-height:1;margin-bottom:8px;">🎓</div>
+                  <h1 style="color:#801906;margin:0;font-size:26px;font-weight:700;letter-spacing:0.5px;">Welcome to the Alumni Network</h1>
+                  <p style="color:#D3A16D;margin:8px 0 0 0;font-size:14px;font-weight:400;">ACC Career Club • Adamjee Cantonment College</p>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style="padding:32px 24px 24px;">
+                  <p style="margin:0 0 16px 0;color:#3D444C;font-size:20px;font-weight:700;">
+                    Dear ${fullName},
+                  </p>
+
+                  <p style="margin:0 0 16px 0;color:#4B5563;font-size:15px;line-height:1.8;">
+                    We are delighted to inform you that you have been officially inducted into the
+                    <strong style="color:#994D35;">ACC Career Club Alumni Network</strong>. 🎉
+                  </p>
+
+                  <p style="margin:0 0 16px 0;color:#4B5563;font-size:15px;line-height:1.8;">
+                    It has been a wonderful journey watching you grow, learn, and contribute to our community.
+                    We are incredibly proud of everything you've achieved and are excited to see where your
+                    professional path takes you next.
+                  </p>
+
+                  <!-- Divider -->
+                  <div style="width:60px;height:3px;background:linear-gradient(90deg,#D3A16D,#994D35);margin:24px auto;border-radius:2px;"></div>
+
+                  <!-- Alumni Details -->
+                  ${batchInfoHTML}
+                  ${jobInfoHTML}
+
+                  <!-- Important Notice -->
+                  <div style="background:#FFF3CD;border-left:4px solid #F59E0B;border-radius:8px;padding:16px 20px;margin:24px 0;">
+                    <p style="margin:0;color:#856404;font-size:14px;line-height:1.6;">
+                      <strong>🔒 Important:</strong> Your student account on the ACC Career Club platform
+                      has been <strong>deactivated</strong> as part of your transition to alumni status.
+                      You will no longer be able to log in with your previous student credentials.
+                    </p>
+                  </div>
+
+                  <!-- Thank You Message -->
+                  <div style="background:linear-gradient(135deg, #F9FAFB, #E7E3D8);border-radius:12px;padding:24px;margin:24px 0;text-align:center;">
+                    <p style="margin:0 0 12px 0;color:#994D35;font-size:32px;line-height:1;">💛</p>
+                    <p style="margin:0 0 8px 0;color:#3D444C;font-size:17px;font-weight:700;">
+                      Thank You for Being Part of Our Story
+                    </p>
+                    <p style="margin:0;color:#4B5563;font-size:14px;line-height:1.7;">
+                      Your contributions, memories, and moments with ACC Career Club have helped shape
+                      what our community is today. We are forever grateful for your time, dedication,
+                      and spirit.
+                    </p>
+                  </div>
+
+                  <!-- Wishes -->
+                  <p style="margin:24px 0 16px 0;color:#4B5563;font-size:15px;line-height:1.8;">
+                    As you step forward into the next chapter of your professional life, we wish you
+                    boundless success, meaningful achievements, and unforgettable experiences.
+                    May every opportunity you pursue bring you closer to your dreams.
+                  </p>
+
+                  <p style="margin:0 0 24px 0;color:#4B5563;font-size:15px;line-height:1.8;">
+                    Remember — you will always be a cherished part of ACC Career Club. Our doors
+                    remain open, and we hope to stay connected with you in the years to come. 🌟
+                  </p>
+
+                  <!-- Signature -->
+                  <div style="border-top:1px solid #E5E7EB;padding-top:20px;margin-top:8px;">
+                    <p style="margin:0 0 4px 0;color:#6B7280;font-size:14px;">
+                      With warm regards and best wishes,
+                    </p>
+                    <p style="margin:8px 0 0 0;color:#3D444C;font-size:15px;font-weight:700;">
+                      ACC Career Club Family
+                    </p>
+                    <p style="margin:2px 0 0 0;color:#994D35;font-size:13px;font-weight:500;">
+                      Adamjee Cantonment College
+                    </p>
+                  </div>
+
+                  <!-- Footer -->
+                  <div style="text-align:center;padding:24px 0 0 0;border-top:1px solid #E5E7EB;margin-top:28px;">
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      This is an automated message from ACC Career Club.
+                    </p>
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      © ${new Date().getFullYear()} ACC Career Club - Adamjee Cantonment College
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: email,
+    subject,
+    html,
+  });
+};

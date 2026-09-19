@@ -88,7 +88,7 @@ export async function POST(request) {
     }
 
     // Check if user has permission
-    const allowedRoles = ["prefect", "itsecretary", "modarator"];
+    const allowedRoles = ["prefect", "itsecretary", "modarator", "assistant_prefect"];
     if (!allowedRoles.includes(decoded.role)) {
       return NextResponse.json(
         { success: false, message: "You don't have permission to create notices" },
