@@ -378,7 +378,7 @@ const SignupClient = () => {
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                        {user?.role || "Student"}
+                        {user?.role || "Member"}
                       </span>
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                         {user?.studentId || "No ID"}

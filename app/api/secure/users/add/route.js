@@ -68,7 +68,7 @@ export async function POST(request) {
       studentId: body.studentId.toUpperCase(),
       department: body.department,
       password: hashedPassword,
-      role: body.role || "student",
+      role: body.role || "member",
       isVerified: true, // Auto verified
       isActive: true, // Auto active
       personalInfo: {
@@ -147,7 +147,7 @@ export async function POST(request) {
       email: body.email,
       password: body.password,
       studentId: body.studentId,
-      role: body.role || "student",
+      role: body.role || "member",
     });
 
     return NextResponse.json({

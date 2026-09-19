@@ -61,15 +61,15 @@ const UsersClient = () => {
     fetchUsers();
   };
 
-  const roles = ["student", "prefect", "itsecretary", "modarator"];
+  const roles = ["member", "prefect", "itsecretary", "modarator"];
   const roleColors = {
-    student: "bg-green-100 text-green-700",
+    member: "bg-green-100 text-green-700",
     prefect: "bg-blue-100 text-blue-700",
     itsecretary: "bg-purple-100 text-purple-700",
     modarator: "bg-orange-100 text-orange-700",
   };
   const roleLabels = {
-    student: "Student",
+    member: "Member",
     prefect: "Prefect",
     itsecretary: "IT Secretary",
     modarator: "Moderator",

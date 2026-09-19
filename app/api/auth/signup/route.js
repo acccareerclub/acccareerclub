@@ -88,7 +88,7 @@ export async function POST(request) {
       studentId: studentId.trim().toUpperCase(),
       department: department.trim(),
       password: hashedPassword,
-      role: 'student',
+      role: 'member',
       isVerified: false, // Account is pending verification
       lastLogin: new Date()
     };

@@ -80,7 +80,7 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded }) => {
     studentId: "",
     department: "",
     password: "",
-    role: "student",
+    role: "member",
 
     // Personal Info
     personalInfo: {
@@ -386,7 +386,7 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded }) => {
       studentId: "",
       department: "",
       password: "",
-      role: "student",
+      role: "member",
       personalInfo: {
         classOrYear: "",
         dateOfBirth: "",
@@ -550,7 +550,7 @@ const AddUserModal = ({ isOpen, onClose, onUserAdded }) => {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent bg-white"
               >
-                <option value="student">Student</option>
+                <option value="member">Member</option>
                 <option value="prefect">Prefect</option>
                 <option value="itsecretary">IT Secretary</option>
                 <option value="modarator">Moderator</option>
