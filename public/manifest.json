@@ -1,7 +1,7 @@
 {
-  "name": "Accareer Club",
-  "short_name": "Accareer",
-  "description": "Your app description here",
+  "name": "ACC Career Club",
+  "short_name": "Career Club",
+  "description": "Adamjee Cantonment College Career Club is a club in Adamjee Cantonment College",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
