@@ -166,6 +166,7 @@ export async function POST(request) {
         noticeMail: true,
         isActive: true,
         isVerified: true,
+        role: { $ne: "moderator" },
       }).select('email fullName _id');
 
       if (usersToNotify.length > 0) {

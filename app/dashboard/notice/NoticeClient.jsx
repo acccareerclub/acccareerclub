@@ -32,6 +32,7 @@ import toast from "react-hot-toast";
 import DashboardMenu from "../../components/layout/DashboardMenu";
 import Image from "next/image";
 import Link from "next/link";
+import { Editor } from "@tinymce/tinymce-react";
 
 // Category options
 const CATEGORIES = [
@@ -587,7 +588,7 @@ const NoticeClient = () => {
 
                     {/* Content */}
                     <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                      {notice.content}
+                      {notice.content.replace(/<[^>]*>?/gm, "")}
                     </p>
 
                     {/* Footer */}
@@ -705,17 +706,29 @@ const NoticeClient = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Content *
                 </label>
-                <textarea
+                <Editor
+                  apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
                   value={formData.content}
-                  onChange={(e) =>
-                    setFormData({ ...formData, content: e.target.value })
+                  onEditorChange={(content) =>
+                    setFormData({ ...formData, content })
                   }
-                  rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent"
-                  required
+                  init={{
+                    height: 300,
+                    menubar: false,
+                    plugins: [
+                      "advlist autolink lists link image charmap print preview anchor",
+                      "searchreplace visualblocks code fullscreen",
+                      "insertdatetime media table paste code help wordcount",
+                    ],
+                    toolbar:
+                      "undo redo | formatselect | bold italic backcolor | \
+                      alignleft aligncenter alignright alignjustify | \
+                      bullist numlist outdent indent | removeformat | help",
+                    content_style:
+                      "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+                  }}
                 />
               </div>
-
               {/* Category and Priority */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -852,18 +865,32 @@ const NoticeClient = () => {
               </div>
 
               {/* Content */}
+              {/* Content */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Content *
                 </label>
-                <textarea
+                <Editor
+                  apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
                   value={formData.content}
-                  onChange={(e) =>
-                    setFormData({ ...formData, content: e.target.value })
+                  onEditorChange={(content) =>
+                    setFormData({ ...formData, content })
                   }
-                  rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent"
-                  required
+                  init={{
+                    height: 300,
+                    menubar: false,
+                    plugins: [
+                      "advlist autolink lists link image charmap print preview anchor",
+                      "searchreplace visualblocks code fullscreen",
+                      "insertdatetime media table paste code help wordcount",
+                    ],
+                    toolbar:
+                      "undo redo | formatselect | bold italic backcolor | \
+                      alignleft aligncenter alignright alignjustify | \
+                      bullist numlist outdent indent | removeformat | help",
+                      content_style:
+                      "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+                  }}
                 />
               </div>
 
@@ -1111,9 +1138,10 @@ const NoticeClient = () => {
 
               {/* Content */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-gray-700 whitespace-pre-wrap">
-                  {selectedNotice.content}
-                </p>
+                <div
+                  className="text-gray-700 prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: selectedNotice.content }}
+                />
               </div>
 
               {/* Footer */}

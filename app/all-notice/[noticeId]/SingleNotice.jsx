@@ -2,14 +2,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation"; // Remove useRouter
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
   FaArrowLeft,
   FaCalendar,
   FaUser,
-  FaTag,
   FaImage,
   FaEye,
   FaClock,
@@ -19,7 +18,6 @@ import { format, formatDistanceToNow } from "date-fns";
 
 const SingleNotice = () => {
   const params = useParams();
-  // Remove router - not needed
   const noticeId = params?.noticeId;
 
   const [notice, setNotice] = useState(null);
@@ -34,7 +32,7 @@ const SingleNotice = () => {
         setLoading(true);
         setError(null);
         const response = await fetch(
-          `/api/users/notice/get-single-notice?noticeId=${noticeId}`
+          `/api/users/notice/get-single-notice?noticeId=${noticeId}`,
         );
         const data = await response.json();
 
@@ -57,10 +55,30 @@ const SingleNotice = () => {
   // Priority configs
   const getPriorityConfig = (priority) => {
     const configs = {
-      low: { bg: "bg-gray-100", text: "text-gray-600", label: "Low", border: "border-gray-300" },
-      medium: { bg: "bg-blue-100", text: "text-blue-600", label: "Medium", border: "border-blue-300" },
-      high: { bg: "bg-orange-100", text: "text-orange-600", label: "High", border: "border-orange-300" },
-      urgent: { bg: "bg-red-100", text: "text-red-600", label: "Urgent", border: "border-red-300" },
+      low: {
+        bg: "bg-gray-100",
+        text: "text-gray-600",
+        label: "Low",
+        border: "border-gray-300",
+      },
+      medium: {
+        bg: "bg-blue-100",
+        text: "text-blue-600",
+        label: "Medium",
+        border: "border-blue-300",
+      },
+      high: {
+        bg: "bg-orange-100",
+        text: "text-orange-600",
+        label: "High",
+        border: "border-orange-300",
+      },
+      urgent: {
+        bg: "bg-red-100",
+        text: "text-red-600",
+        label: "Urgent",
+        border: "border-red-300",
+      },
     };
     return configs[priority] || configs.medium;
   };
@@ -96,7 +114,9 @@ const SingleNotice = () => {
           <h2 className="text-2xl font-bold text-[#3D444C] mb-2">
             Notice Not Found
           </h2>
-          <p className="text-gray-600 mb-6">{error || "The notice you're looking for doesn't exist."}</p>
+          <p className="text-gray-600 mb-6">
+            {error || "The notice you're looking for doesn't exist."}
+          </p>
           <Link
             href="/all-notice"
             className="inline-flex items-center gap-2 bg-[#994D35] text-white px-6 py-3 rounded-lg hover:bg-[#3D444C] transition-colors"
@@ -126,38 +146,25 @@ const SingleNotice = () => {
         {/* Notice Card */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           {/* Priority Bar */}
-          <div className={`h-1 ${
-            notice.priority === "urgent" ? "bg-red-500" :
-            notice.priority === "high" ? "bg-orange-500" :
-            notice.priority === "medium" ? "bg-blue-500" :
-            "bg-gray-300"
-          }`} />
+          <div
+            className={`h-1 ${
+              notice.priority === "urgent"
+                ? "bg-red-500"
+                : notice.priority === "high"
+                  ? "bg-orange-500"
+                  : notice.priority === "medium"
+                    ? "bg-blue-500"
+                    : "bg-gray-300"
+            }`}
+          />
 
-          {/* Images */}
-          {notice.images && notice.images.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-4">
-              {notice.images.map((img, index) => (
-                <div
-                  key={index}
-                  className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden"
-                >
-                  <Image
-                    src={img.url}
-                    alt={`Notice image ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 50vw, 33vw"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Content */}
+          {/* Content Section */}
           <div className="p-6 sm:p-8">
             {/* Header */}
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <span className={`text-xs px-3 py-1 rounded-full font-medium ${priority.bg} ${priority.text}`}>
+              <span
+                className={`text-xs px-3 py-1 rounded-full font-medium ${priority.bg} ${priority.text}`}
+              >
                 {priority.label}
               </span>
               <span className="text-xs bg-[#E7E3D8] text-[#3D444C] px-3 py-1 rounded-full">
@@ -195,7 +202,9 @@ const SingleNotice = () => {
               </span>
               <span className="flex items-center gap-1">
                 <FaClock className="text-[#D3A16D]" />
-                {formatDistanceToNow(new Date(notice.createdAt), { addSuffix: true })}
+                {formatDistanceToNow(new Date(notice.createdAt), {
+                  addSuffix: true,
+                })}
               </span>
               {notice.views > 0 && (
                 <span className="flex items-center gap-1">
@@ -205,26 +214,45 @@ const SingleNotice = () => {
               )}
             </div>
 
-            {/* Content */}
-            <div className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {notice.content}
-            </div>
+            {/* Text Content */}
+            <div
+              className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: notice.content }}
+            />
+          </div>
 
-            {/* Footer */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <FaBell className="text-[#D3A16D]" />
-                  <span>Published: {format(new Date(notice.publishedAt), "PPP 'at' p")}</span>
+          {/* Images Section - Full Width, placed after text */}
+          {notice.images && notice.images.length > 0 && (
+            <div className="w-full flex flex-col mt-4">
+              {notice.images.map((img, index) => (
+                <div key={index} className="relative w-full bg-gray-50">
+                  <Image
+                    src={img.url}
+                    alt={`Notice image ${index + 1}`}
+                    className="w-full h-auto object-cover block"
+                  />
                 </div>
-                <Link
-                  href="/all-notice"
-                  className="inline-flex items-center gap-2 text-[#994D35] hover:text-[#3D444C] transition-colors font-medium"
-                >
-                  View All Notices
-                  <FaArrowLeft className="text-sm rotate-180" />
-                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="p-6 sm:p-8 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <FaBell className="text-[#D3A16D]" />
+                <span>
+                  Published:{" "}
+                  {format(new Date(notice.publishedAt), "PPP 'at' p")}
+                </span>
               </div>
+              <Link
+                href="/all-notice"
+                className="inline-flex items-center gap-2 text-[#994D35] hover:text-[#3D444C] transition-colors font-medium"
+              >
+                View All Notices
+                <FaArrowLeft className="text-sm rotate-180" />
+              </Link>
             </div>
           </div>
         </div>
