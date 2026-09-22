@@ -226,10 +226,11 @@ const SingleNotice = () => {
             <div className="w-full flex flex-col mt-4">
               {notice.images.map((img, index) => (
                 <div key={index} className="relative w-full bg-gray-50">
-                  <Image
+                  <img
                     src={img.url}
                     alt={`Notice image ${index + 1}`}
                     className="w-full h-auto object-cover block"
+                    loading="lazy"
                   />
                 </div>
               ))}

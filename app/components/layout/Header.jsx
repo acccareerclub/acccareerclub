@@ -22,15 +22,15 @@ import { IoMdArrowDropdown } from "react-icons/io";
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   // State for Services Dropdowns
   const [isDesktopServicesOpen, setIsDesktopServicesOpen] = useState(false);
   // Tracks if the menu was opened via click ('click') or hover ('hover')
-  const [openMethod, setOpenMethod] = useState(null); 
+  const [openMethod, setOpenMethod] = useState(null);
   const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(true);
 
   const dropdownRef = useRef(null);
-  const servicesRef = useRef(null); 
+  const servicesRef = useRef(null);
   const { user, logout } = useAuth();
 
   const toggleMenu = () => {
@@ -39,7 +39,7 @@ const Header = () => {
 
   const closeMenu = () => {
     setIsMenuOpen(false);
-    setIsMobileServicesOpen(false); 
+    setIsMobileServicesOpen(false);
     // Reset desktop services when mobile menu closes
     setIsDesktopServicesOpen(false);
     setOpenMethod(null);
@@ -81,32 +81,32 @@ const Header = () => {
   };
 
   // --- Desktop Services Handlers ---
-  
+
   const handleServicesMouseEnter = () => {
     // If it was opened via click, don't change state on hover
-    if (openMethod !== 'click') {
+    if (openMethod !== "click") {
       setIsDesktopServicesOpen(true);
-      setOpenMethod('hover');
+      setOpenMethod("hover");
     }
   };
 
   const handleServicesMouseLeave = () => {
     // Only close on mouse leave if it was opened via hover
-    if (openMethod === 'hover') {
+    if (openMethod === "hover") {
       setIsDesktopServicesOpen(false);
       setOpenMethod(null);
     }
   };
 
   const handleServicesClick = () => {
-    if (isDesktopServicesOpen && openMethod === 'click') {
+    if (isDesktopServicesOpen && openMethod === "click") {
       // If it's already open via click, clicking again closes it
       setIsDesktopServicesOpen(false);
       setOpenMethod(null);
     } else {
       // Otherwise, open it via click
       setIsDesktopServicesOpen(true);
-      setOpenMethod('click');
+      setOpenMethod("click");
     }
   };
 
@@ -141,9 +141,9 @@ const Header = () => {
           >
             Home
           </Link>
-          
+
           {/* Desktop Services Dropdown */}
-          <div 
+          <div
             className="relative"
             ref={servicesRef}
             onMouseEnter={handleServicesMouseEnter}
@@ -151,10 +151,14 @@ const Header = () => {
           >
             <button
               className="hover:text-[#D3A16D] flex items-center gap-1 transition-colors uppercase duration-200 focus:outline-none"
-              onClick={handleServicesClick} 
+              onClick={handleServicesClick}
             >
-              Services 
-              {isDesktopServicesOpen ? <FaChevronUp className="text-xs" /> : <FaChevronDown className="text-xs" />}
+              Services
+              {isDesktopServicesOpen ? (
+                <FaChevronUp className="text-xs" />
+              ) : (
+                <FaChevronDown className="text-xs" />
+              )}
             </button>
 
             {/* Desktop Dropdown Menu */}
@@ -172,16 +176,34 @@ const Header = () => {
             >
               {/* Inner container for the actual visual box and shadow */}
               <div className="bg-white rounded-xl shadow-xl overflow-hidden p-2 flex flex-col">
-                <Link href="/events" className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors">
-                  Events
+                <Link
+                  href="/all-notice"
+                  className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors"
+                >
+                  All Notice
                 </Link>
-                <Link href="/sessions" className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors">
+                <Link
+                  href="/sessions"
+                  className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors"
+                >
                   Sessions
                 </Link>
-                <Link href="/jobs" className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors">
+                <Link
+                  href="/events"
+                  className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors"
+                >
+                  Events
+                </Link>
+                <Link
+                  href="/jobs"
+                  className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors"
+                >
                   Jobs
                 </Link>
-                <Link href="/companies" className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors">
+                <Link
+                  href="/companies"
+                  className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors"
+                >
                   Companies
                 </Link>
               </div>
@@ -427,22 +449,28 @@ const Header = () => {
                 className="w-full flex items-center justify-between px-4 py-1 text-[#3D444C] font-medium rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
               >
                 Services
-                {isMobileServicesOpen ? <FaChevronUp className="text-sm" /> : <FaChevronDown className="text-sm" />}
+                {isMobileServicesOpen ? (
+                  <FaChevronUp className="text-sm" />
+                ) : (
+                  <FaChevronDown className="text-sm" />
+                )}
               </button>
-              
+
               {/* Mobile Dropdown Menu */}
               <div
                 className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                  isMobileServicesOpen ? "max-h-40 opacity-100 mt-1" : "max-h-0 opacity-0"
+                  isMobileServicesOpen
+                    ? "max-h-40 opacity-100 mt-1"
+                    : "max-h-0 opacity-0"
                 }`}
               >
                 <div className="flex flex-col pl-6 space-y-1">
                   <Link
-                    href="/events"
+                    href="/all-notice"
                     className="block px-4 py-1 text-sm text-[#3D444C] rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
                     onClick={closeMenu}
                   >
-                    Events
+                    All Notice
                   </Link>
                   <Link
                     href="/sessions"
@@ -450,6 +478,13 @@ const Header = () => {
                     onClick={closeMenu}
                   >
                     Sessions
+                  </Link>
+                  <Link
+                    href="/events"
+                    className="block px-4 py-1 text-sm text-[#3D444C] rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
+                    onClick={closeMenu}
+                  >
+                    Events
                   </Link>
                   <Link
                     href="/jobs"

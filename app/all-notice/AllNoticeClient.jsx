@@ -329,9 +329,10 @@ const AllNoticeContent = () => {
                         <h3 className="text-lg font-bold text-[#3D444C] hover:text-[#994D35] transition-colors line-clamp-2">
                           {notice.title}
                         </h3>
-                        <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                          {notice.content}
-                        </p>
+                        {/* Content */}
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                      {notice.content.replace(/<[^>]*>?/gm, "")}
+                    </p>
                         {notice.images && notice.images.length > 0 && (
                           <div className="flex items-center gap-1 text-xs text-gray-400 mt-2">
                             <span>🖼️</span>
