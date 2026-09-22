@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Saira } from "next/font/google";
 import "./globals.css";
 import Header from "./components/layout/Header";
 import ToastProvider from "./components/ToastProvider";
@@ -15,16 +15,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const saira = Saira({
+  subsets: ["latin"],
+  variable: "--font-saira",
+  weight: ["400", "500", "600", "700"],
+})
+
 export const metadata = {
+  manifest: "/manifest.json",
   title: "ACC Career Club",
-  description: "Adamjee Cantonment College Career Club is a club in Adamjee Cantonment College",
+  description:
+    "Adamjee Cantonment College Career Club is a club in Adamjee Cantonment College",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${saira.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>

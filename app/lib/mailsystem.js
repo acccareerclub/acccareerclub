@@ -1085,8 +1085,8 @@ export const sendAlumniWelcomeEmail = async ({
               <tr>
                 <td style="background:linear-gradient(135deg, #3D444C, #994D35);padding:36px 24px;text-align:center;">
                   <div style="font-size:48px;line-height:1;margin-bottom:8px;">🎓</div>
-                  <h1 style="color:#801906;margin:0;font-size:26px;font-weight:700;letter-spacing:0.5px;">Welcome to the Alumni Network</h1>
-                  <p style="color:#D3A16D;margin:8px 0 0 0;font-size:14px;font-weight:400;">ACC Career Club • Adamjee Cantonment College</p>
+                  <h1 style="color:#ffffff;margin:0;font-size:26px;font-weight:700;letter-spacing:0.5px;">Welcome to the Alumni Network</h1>
+                  <p style="color:#ffffff;margin:8px 0 0 0;font-size:14px;font-weight:400;">ACC Career Club • Adamjee Cantonment College</p>
                 </td>
               </tr>
 

@@ -13,16 +13,24 @@ import {
   FaSignOutAlt,
   FaUserGraduate,
   FaClipboardList,
-  FaEnvelope,
-  FaQuestionCircle,
   FaArrowRight,
+  FaChevronDown,
+  FaChevronUp,
 } from "react-icons/fa";
 import { IoMdArrowDropdown } from "react-icons/io";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // State for Services Dropdowns
+  const [isDesktopServicesOpen, setIsDesktopServicesOpen] = useState(false);
+  // Tracks if the menu was opened via click ('click') or hover ('hover')
+  const [openMethod, setOpenMethod] = useState(null); 
+  const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(true);
+
   const dropdownRef = useRef(null);
+  const servicesRef = useRef(null); 
   const { user, logout } = useAuth();
 
   const toggleMenu = () => {
@@ -31,6 +39,10 @@ const Header = () => {
 
   const closeMenu = () => {
     setIsMenuOpen(false);
+    setIsMobileServicesOpen(false); 
+    // Reset desktop services when mobile menu closes
+    setIsDesktopServicesOpen(false);
+    setOpenMethod(null);
   };
 
   const handleLogOut = () => {
@@ -44,6 +56,10 @@ const Header = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
+      if (servicesRef.current && !servicesRef.current.contains(event.target)) {
+        setIsDesktopServicesOpen(false);
+        setOpenMethod(null);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -52,14 +68,46 @@ const Header = () => {
     };
   }, []);
 
-  // Toggle dropdown
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  // Close dropdown on mouse leave
+  const toggleMobileServices = () => {
+    setIsMobileServicesOpen(!isMobileServicesOpen);
+  };
+
   const handleMouseLeave = () => {
     setIsDropdownOpen(false);
+  };
+
+  // --- Desktop Services Handlers ---
+  
+  const handleServicesMouseEnter = () => {
+    // If it was opened via click, don't change state on hover
+    if (openMethod !== 'click') {
+      setIsDesktopServicesOpen(true);
+      setOpenMethod('hover');
+    }
+  };
+
+  const handleServicesMouseLeave = () => {
+    // Only close on mouse leave if it was opened via hover
+    if (openMethod === 'hover') {
+      setIsDesktopServicesOpen(false);
+      setOpenMethod(null);
+    }
+  };
+
+  const handleServicesClick = () => {
+    if (isDesktopServicesOpen && openMethod === 'click') {
+      // If it's already open via click, clicking again closes it
+      setIsDesktopServicesOpen(false);
+      setOpenMethod(null);
+    } else {
+      // Otherwise, open it via click
+      setIsDesktopServicesOpen(true);
+      setOpenMethod('click');
+    }
   };
 
   return (
@@ -86,30 +134,71 @@ const Header = () => {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-6 lg:space-x-8 text-[#3D444C] font-medium">
+        <nav className="hidden md:flex items-center space-x-6 lg:space-x-8 text-[#3D444C] font-medium uppercase font-saira">
           <Link
             href="/"
-            className="hover:text-[#D3A16D] transition-colors duration-200"
+            className="hover:text-[#D3A16D] font-saira transition-colors duration-200"
           >
             Home
           </Link>
-          <Link
-            href="/jobs"
-            className="hover:text-[#D3A16D] transition-colors duration-200"
+          
+          {/* Desktop Services Dropdown */}
+          <div 
+            className="relative"
+            ref={servicesRef}
+            onMouseEnter={handleServicesMouseEnter}
+            onMouseLeave={handleServicesMouseLeave}
           >
-            Jobs
-          </Link>
-          <Link
-            href="/companies"
-            className="hover:text-[#D3A16D] transition-colors duration-200"
-          >
-            Companies
-          </Link>
+            <button
+              className="hover:text-[#D3A16D] flex items-center gap-1 transition-colors uppercase duration-200 focus:outline-none"
+              onClick={handleServicesClick} 
+            >
+              Services 
+              {isDesktopServicesOpen ? <FaChevronUp className="text-xs" /> : <FaChevronDown className="text-xs" />}
+            </button>
+
+            {/* Desktop Dropdown Menu */}
+            {/* 
+               KEY FIX 1: We use a wrapper with 'pt-2' (padding-top) instead of 'mt-2' (margin-top).
+               The padding is part of the element, so moving the mouse over the gap
+               doesn't trigger onMouseLeave. 
+            */}
+            <div
+              className={`absolute top-full left-0 w-48 transition-all duration-300 origin-top ${
+                isDesktopServicesOpen
+                  ? "opacity-100 scale-y-100 pointer-events-auto pt-2"
+                  : "opacity-0 scale-y-95 pointer-events-none pt-0"
+              }`}
+            >
+              {/* Inner container for the actual visual box and shadow */}
+              <div className="bg-white rounded-xl shadow-xl overflow-hidden p-2 flex flex-col">
+                <Link href="/events" className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors">
+                  Events
+                </Link>
+                <Link href="/sessions" className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors">
+                  Sessions
+                </Link>
+                <Link href="/jobs" className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors">
+                  Jobs
+                </Link>
+                <Link href="/companies" className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors">
+                  Companies
+                </Link>
+              </div>
+            </div>
+          </div>
+
           <Link
             href="/about"
             className="hover:text-[#D3A16D] transition-colors duration-200"
           >
             About
+          </Link>
+          <Link
+            href="/contact"
+            className="hover:text-[#D3A16D] transition-colors duration-200"
+          >
+            Contact
           </Link>
         </nav>
 
@@ -251,7 +340,7 @@ const Header = () => {
         {/* Mobile Menu Toggle Button */}
         <button
           onClick={toggleMenu}
-          className="md:hidden flex flex-col items-center justify-center w-10 h-10 rounded-lg hover:bg-[#3D444C]/10 transition-colors duration-200 focus:outline-none"
+          className="md:hidden flex flex-col items-center justify-center w-10 h-10 rounded-lg hover:bg-[#3D444C]/10 transition-colors duration-200 focus:outline-none font-saira"
           aria-label="Toggle menu"
         >
           <span
@@ -322,7 +411,7 @@ const Header = () => {
           </div>
 
           {/* Mobile Navigation Links */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <Link
               href="/"
               className="block px-4 py-1 text-[#3D444C] font-medium rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
@@ -330,26 +419,69 @@ const Header = () => {
             >
               Home
             </Link>
-            <Link
-              href="/jobs"
-              className="block px-4 py-1 text-[#3D444C] font-medium rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
-              onClick={closeMenu}
-            >
-              Jobs
-            </Link>
-            <Link
-              href="/companies"
-              className="block px-4 py-1 text-[#3D444C] font-medium rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
-              onClick={closeMenu}
-            >
-              Companies
-            </Link>
+
+            {/* Mobile Services Dropdown */}
+            <div>
+              <button
+                onClick={toggleMobileServices}
+                className="w-full flex items-center justify-between px-4 py-1 text-[#3D444C] font-medium rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
+              >
+                Services
+                {isMobileServicesOpen ? <FaChevronUp className="text-sm" /> : <FaChevronDown className="text-sm" />}
+              </button>
+              
+              {/* Mobile Dropdown Menu */}
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                  isMobileServicesOpen ? "max-h-40 opacity-100 mt-1" : "max-h-0 opacity-0"
+                }`}
+              >
+                <div className="flex flex-col pl-6 space-y-1">
+                  <Link
+                    href="/events"
+                    className="block px-4 py-1 text-sm text-[#3D444C] rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
+                    onClick={closeMenu}
+                  >
+                    Events
+                  </Link>
+                  <Link
+                    href="/sessions"
+                    className="block px-4 py-1 text-sm text-[#3D444C] rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
+                    onClick={closeMenu}
+                  >
+                    Sessions
+                  </Link>
+                  <Link
+                    href="/jobs"
+                    className="block px-4 py-1 text-sm text-[#3D444C] rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
+                    onClick={closeMenu}
+                  >
+                    Jobs
+                  </Link>
+                  <Link
+                    href="/companies"
+                    className="block px-4 py-1 text-sm text-[#3D444C] rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
+                    onClick={closeMenu}
+                  >
+                    Companies
+                  </Link>
+                </div>
+              </div>
+            </div>
+
             <Link
               href="/about"
               className="block px-4 py-1 text-[#3D444C] font-medium rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
               onClick={closeMenu}
             >
               About
+            </Link>
+            <Link
+              href="/contact"
+              className="block px-4 py-1 text-[#3D444C] font-medium rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
+              onClick={closeMenu}
+            >
+              Contact
             </Link>
 
             {user && (

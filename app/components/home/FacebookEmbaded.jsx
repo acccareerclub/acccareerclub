@@ -1,22 +1,45 @@
 // app/components/home/FacebookEmbaded.jsx
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Script from "next/script";
 
 const FacebookEmbaded = () => {
+  const containerRef = useRef(null);
+  const [width, setWidth] = useState(500); // Default width
+
+  // 1. Handle resize to dynamically calculate width
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        // Get the inner width of the container, subtract padding (p-2 = 16px total)
+        const containerWidth = containerRef.current.offsetWidth - 16;
+        // Facebook requires a minimum width of 180px, and max of 500px for the timeline
+        setWidth(Math.min(Math.max(containerWidth, 180), 500));
+      }
+    };
+
+    // Initial calculation
+    handleResize();
+
+    // Add event listener for window resizing
+    window.addEventListener("resize", handleResize);
+    
+    // Cleanup
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // 2. Re-parse when width changes so Facebook updates the iframe size
   useEffect(() => {
     if (window.FB) {
       window.FB.XFBML.parse();
     }
-  }, []);
+  }, [width]);
 
   return (
     <div className="w-full max-w-4xl mx-auto my-8 px-1">
-      {/* 1. CRITICAL: Facebook SDK requires this element to exist */}
       <div id="fb-root"></div>
 
-      {/* 2. Use Next.js native Script component for reliable loading */}
       <Script
         id="facebook-jssdk"
         strategy="lazyOnload"
@@ -34,6 +57,7 @@ const FacebookEmbaded = () => {
       />
 
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        {/* Header Section */}
         <div className="p-2 border-b border-gray-200 bg-gradient-to-r from-[#3D444C] to-[#58626e]">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center">
@@ -56,16 +80,21 @@ const FacebookEmbaded = () => {
           </div>
         </div>
 
-        <div className="p-2 min-h-[500px] flex justify-center">
-          <div className="mx-auto">
+        {/* Facebook Embed Container */}
+        {/* 3. Added overflow-hidden to prevent mobile horizontal scroll/overflow */}
+        <div 
+          ref={containerRef} 
+          className="p-4 w-full flex justify-center overflow-hidden bg-gray-50 min-h-[600px]"
+        >
+          <div className="w-full flex justify-center">
             <div
-              className="fb-page w-full mx-auto"
+              className="fb-page"
               data-href="https://www.facebook.com/ACC.CareerClub/"
               data-tabs="timeline"
-              data-width="500"
-              data-height="600"
+              data-width={width} // 4. Dynamically calculated width
+              data-height="800"  // 5. Increased height for desktop
               data-small-header="false"
-              data-adapt-container-width="true"
+              data-adapt-container-width="false" // 6. Turned off native adaption
               data-hide-cover="false"
               data-show-facepile="true"
             >
