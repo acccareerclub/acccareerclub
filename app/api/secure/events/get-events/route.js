@@ -48,17 +48,58 @@ export async function GET(request) {
       query.eventStatus = status;
     }
 
-    const [events, totalCount] = await Promise.all([
+    const [rawEvents, totalCount] = await Promise.all([
       Event.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .select(
-          "eventTitle eventThumbnail eventDescription eventType location eventDate eventDay eventStatus preResources postResources feedback preRegistrationRequired preRegistrationDeadline preRegistrationUsers eventSpeakerAvailability eventSpeakerCredentials eventAttendees achievers isFeatured isActive createdByName createdAt",
+          "eventTitle eventThumbnail eventDescription eventType location " +
+            "eventDate eventDay eventStatus " +
+            "preResources postResources feedback " +
+            "preRegistrationRequired preRegistrationDeadline " +
+            "externalPreRegistrationAllowed " +
+            "preRegistrationUsers " +
+            "eventSpeakerAvailability eventSpeakerCredentials " +
+            "eventAttendees externalAttendees achievers " +
+            "isFeatured isActive createdByName createdAt",
         )
+        .populate({
+          path: "feedback.userId",
+          select: "fullName email studentId department phone role",
+        })
         .lean(),
       Event.countDocuments(query),
     ]);
+
+    // ==========================================
+    // FLATTEN populated user data into each feedback entry
+    // so the client can read simple fields (userFullName, userEmail, etc.)
+    // ==========================================
+    const events = rawEvents.map((ev) => ({
+      ...ev,
+      feedback: (ev.feedback || []).map((f) => {
+        const u = f.userId; // now an object or null
+        return {
+          _id: f._id,
+          rating: f.rating,
+          comment: f.comment || "",
+          submittedAt: f.submittedAt,
+          // External submitter snapshot
+          externalEmail: f.externalEmail || "",
+          externalName: f.externalName || "",
+          // Reference ID only (string form)
+          userId: u?._id ? String(u._id) : null,
+          // Flattened member info (for the FeedbackCard UI)
+          userFullName: u?.fullName || "",
+          userEmail: u?.email || "",
+          userStudentId: u?.studentId || "",
+          userDepartment: u?.department || "",
+          userPhone: u?.phone || "",
+          userRole: u?.role || "",
+        };
+      }),
+    }));
 
     return NextResponse.json({
       success: true,

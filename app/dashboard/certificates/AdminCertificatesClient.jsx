@@ -1,18 +1,25 @@
 "use client";
 
 import DashboardMenu from "@/app/components/layout/DashboardMenu";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import CreateCertificateModal from "./CreateCertificateModal";
 import EditCertificateModal from "./EditCertificateModal";
 import QRCode from "react-qr-code";
 import { FaPrint, FaTrash, FaEdit, FaEnvelope } from "react-icons/fa";
 
+const PAGE_SIZE = 50;
+
 const AdminCertificatesClient = () => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searching, setSearching] = useState(false);
   const [filterType, setFilterType] = useState("all");
   const [editingCert, setEditingCert] = useState(null);
 
@@ -22,28 +29,135 @@ const AdminCertificatesClient = () => {
   const [toast, setToast] = useState({ type: "", text: "" });
   const [sendingEmailId, setSendingEmailId] = useState(null);
 
-  // ==========================================
-  // FETCH
-  // ==========================================
-  const fetchCertificates = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/secure/certificates/get-certificates", {
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (data.success) setCertificates(data.certificates || []);
-    } catch (error) {
-      console.error("Error fetching certificates:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Track the last successful fetch so we can abort races
+  const fetchAbortRef = useRef(null);
 
+  // ==========================================
+  // DEBOUNCE SEARCH (300ms)
+  // ==========================================
   useEffect(() => {
-    fetchCertificates();
-  }, [fetchCertificates]);
+    const t = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
+  // ==========================================
+  // FETCH (initial or reset)
+  // ==========================================
+  const fetchCertificates = useCallback(async (searchOverride) => {
+    // Cancel any in-flight fetch
+    if (fetchAbortRef.current) fetchAbortRef.current.abort();
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
+
+    const search =
+      typeof searchOverride === "string"
+        ? searchOverride
+        : debouncedSearch;
+
+    if (search) setSearching(true);
+    else setLoading(true);
+
+    try {
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        skip: "0",
+      });
+      if (search) params.set("search", search);
+
+      const res = await fetch(
+        `/api/secure/certificates/get-certificates?${params.toString()}`,
+        { credentials: "include", signal: controller.signal },
+      );
+      const data = await res.json();
+
+      if (controller.signal.aborted) return;
+
+      if (data.success) {
+        setCertificates(data.certificates || []);
+        setHasMore(!!data.hasMore);
+        setTotal(data.total || 0);
+        setSelectedIds([]); // clear selection when list changes
+      } else {
+        setToast({
+          type: "error",
+          text: data.message || "Failed to load certificates",
+        });
+      }
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      console.error("Error fetching certificates:", err);
+      setToast({ type: "error", text: "Failed to load certificates" });
+    } finally {
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        setSearching(false);
+      }
+    }
+  }, [debouncedSearch]);
+
+  // ==========================================
+  // LOAD MORE (append next page)
+  // ==========================================
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+
+    setLoadingMore(true);
+    try {
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        skip: String(certificates.length),
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+
+      const res = await fetch(
+        `/api/secure/certificates/get-certificates?${params.toString()}`,
+        { credentials: "include" },
+      );
+      const data = await res.json();
+
+      if (data.success) {
+        // Dedupe by _id in case of overlap
+        setCertificates((prev) => {
+          const seen = new Set(prev.map((c) => c._id));
+          const merged = [...prev];
+          for (const c of data.certificates || []) {
+            if (!seen.has(c._id)) {
+              seen.add(c._id);
+              merged.push(c);
+            }
+          }
+          return merged;
+        });
+        setHasMore(!!data.hasMore);
+        setTotal(data.total || 0);
+      } else {
+        setToast({
+          type: "error",
+          text: data.message || "Failed to load more certificates",
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setToast({
+        type: "error",
+        text: "Failed to load more certificates",
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [certificates.length, debouncedSearch, hasMore, loadingMore]);
+
+  // ==========================================
+  // TRIGGER FETCH ON SEARCH CHANGE / MOUNT
+  // ==========================================
+  useEffect(() => {
+    fetchCertificates(debouncedSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  // ==========================================
+  // AUTO-CLEAR TOAST
+  // ==========================================
   useEffect(() => {
     if (toast.text) {
       const t = setTimeout(() => setToast({ type: "", text: "" }), 3500);
@@ -52,7 +166,7 @@ const AdminCertificatesClient = () => {
   }, [toast]);
 
   // ==========================================
-  // GROUPING
+  // GROUPING (client-side, applied to loaded certs)
   // ==========================================
   const groupedCertificates = React.useMemo(() => {
     const groups = {};
@@ -95,30 +209,15 @@ const AdminCertificatesClient = () => {
   }, [certificates]);
 
   // ==========================================
-  // FILTER
+  // FILTER (type only — search is now backend)
   // ==========================================
   const filteredGroups = React.useMemo(() => {
     let result = groupedCertificates;
-    if (filterType !== "all")
+    if (filterType !== "all") {
       result = result.filter((g) => g.type === filterType);
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      result = result
-        .map((group) => {
-          const matchingCerts = group.certificates.filter(
-            (c) =>
-              c.recipient?.fullName?.toLowerCase().includes(term) ||
-              c.recipient?.email?.toLowerCase().includes(term) ||
-              c.recipient?.studentId?.toLowerCase().includes(term) ||
-              c.certificateId?.toLowerCase().includes(term) ||
-              group.label.toLowerCase().includes(term),
-          );
-          return { ...group, certificates: matchingCerts };
-        })
-        .filter((g) => g.certificates.length > 0);
     }
     return result;
-  }, [groupedCertificates, filterType, searchTerm]);
+  }, [groupedCertificates, filterType]);
 
   const toggleGroup = (key) =>
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -131,15 +230,21 @@ const AdminCertificatesClient = () => {
   const collapseAll = () => setExpandedGroups({});
 
   // ==========================================
-  // STATS
+  // STATS — based on loaded certs
+  // (total from backend shown separately)
   // ==========================================
   const stats = React.useMemo(() => {
-    const total = certificates.length;
+    const loaded = certificates.length;
     const internal = certificates.filter(
       (c) => c.recipient?.isClubMember,
     ).length;
-    const external = total - internal;
-    return { total, internal, external, groups: groupedCertificates.length };
+    const external = loaded - internal;
+    return {
+      loaded,
+      internal,
+      external,
+      groups: groupedCertificates.length,
+    };
   }, [certificates, groupedCertificates]);
 
   // ==========================================
@@ -227,7 +332,6 @@ const AdminCertificatesClient = () => {
   const sendCertificateEmail = async (cert) => {
     if (!cert) return;
 
-    // Validate email before making a network call
     if (!cert.recipient?.email) {
       setToast({
         type: "error",
@@ -251,8 +355,6 @@ const AdminCertificatesClient = () => {
 
       if (data.success) {
         setToast({ type: "success", text: data.message });
-
-        // Optimistic UI update — no need to refetch everything
         setCertificates((prev) =>
           prev.map((c) =>
             c.certificateId === cert.certificateId
@@ -279,7 +381,7 @@ const AdminCertificatesClient = () => {
   };
 
   // ==========================================
-  // PRINT — hidden iframe, no new window/tab
+  // PRINT (unchanged)
   // ==========================================
   const handlePrint = (cert) => {
     if (!cert) return;
@@ -395,202 +497,50 @@ const AdminCertificatesClient = () => {
     position: relative;
     overflow: hidden;
   }
-  .id-block {
-    position: absolute;
-    top: 18%;
-    right: 10%;
-    text-align: right;
-  }
-  .id-value {
-    font-family: 'Courier New', monospace;
-    font-size: 10pt;
-    font-weight: 700;
-    color: #3D444C;
-    line-height: 1.2;
-    margin: 0;
-  }
-  .center {
-    position: absolute;
-    left: 10%;
-    right: 10%;
-    top: 22%;
-    bottom: 34%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-  }
-  .title {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-weight: 700;
-    color: #3D444C;
-    font-size: 26pt;
-    letter-spacing: 0.5px;
-    line-height: 1.1;
-    margin: 0 0 6pt;
-  }
-  .subtitle {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-style: italic;
-    color: #555;
-    font-size: 16pt;
-    margin: 0 0 6pt;
-  }
-  .name {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-weight: 700;
-    color: #3D444C;
-    font-size: 29pt;
-    letter-spacing: 0.5px;
-    line-height: 1.1;
-    padding: 0 24pt 4pt;
-    border-bottom: 2px solid #D3A16D;
-    margin: 0;
-  }
-  .achievement {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-weight: 600;
-    color: #994D35;
-    font-size: 17pt;
-    margin: 4pt 0 0;
-  }
-  .desc {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    color: #333;
-    font-size: 14pt;
-    max-width: 70%;
-    margin-top: 6pt;
-    line-height: 1.5;
-  }
-  .event {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-style: italic;
-    color: #666;
-    font-size: 12pt;
-    margin-top: 8pt;
-  }
-  .bottom {
-    position: absolute;
-    left: 8%;
-    right: 8%;
-    bottom: 10%;
-  }
-  .sign-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 12pt;
-    align-items: end;
-  }
-  .sign-row-custom {
-    display: flex;
-    gap: 12pt;
-    align-items: flex-end;
-    justify-content: space-between;
-  }
+  .id-block { position: absolute; top: 18%; right: 10%; text-align: right; }
+  .id-value { font-family: 'Courier New', monospace; font-size: 10pt; font-weight: 700; color: #3D444C; line-height: 1.2; margin: 0; }
+  .center { position: absolute; left: 10%; right: 10%; top: 22%; bottom: 34%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .title { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: #3D444C; font-size: 26pt; letter-spacing: 0.5px; line-height: 1.1; margin: 0 0 6pt; }
+  .subtitle { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; color: #555; font-size: 16pt; margin: 0 0 6pt; }
+  .name { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: #3D444C; font-size: 29pt; letter-spacing: 0.5px; line-height: 1.1; padding: 0 24pt 4pt; border-bottom: 2px solid #D3A16D; margin: 0; }
+  .achievement { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; color: #994D35; font-size: 17pt; margin: 4pt 0 0; }
+  .desc { font-family: 'Cormorant Garamond', Georgia, serif; color: #333; font-size: 14pt; max-width: 70%; margin-top: 6pt; line-height: 1.5; }
+  .event { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; color: #666; font-size: 12pt; margin-top: 8pt; }
+  .bottom { position: absolute; left: 8%; right: 8%; bottom: 10%; }
+  .sign-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12pt; align-items: end; }
+  .sign-row-custom { display: flex; gap: 12pt; align-items: flex-end; justify-content: space-between; }
   .sig-col { flex: 1; text-align: center; }
-  .sig-line {
-    width: 100%;
-    border-bottom: 1px solid #3D444C;
-    height: 20pt;
-    margin-bottom: 4pt;
-  }
-  .sig-label {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-weight: 600;
-    color: #3D444C;
-    font-size: 10pt;
-    text-align: center;
-    line-height: 1.2;
-    margin: 0;
-  }
-  .sig-name {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    color: #555;
-    font-size: 9pt;
-    text-align: center;
-    line-height: 1.2;
-    margin: 0;
-  }
-  .qr-wrap {
-    display: inline-block;
-    background: #fff;
-    padding: 2pt;
-    border: 1px solid rgba(211,161,109,0.6);
-    border-radius: 2pt;
-  }
-  .qr-left { display: flex; justify-content: flex-start; }
+  .sig-line { width: 100%; border-bottom: 1px solid #3D444C; height: 20pt; margin-bottom: 4pt; }
+  .sig-label { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; color: #3D444C; font-size: 10pt; text-align: center; line-height: 1.2; margin: 0; }
+  .sig-name { font-family: 'Cormorant Garamond', Georgia, serif; color: #555; font-size: 9pt; text-align: center; line-height: 1.2; margin: 0; }
+  .qr-wrap { display: inline-block; background: #fff; padding: 2pt; border: 1px solid rgba(211,161,109,0.6); border-radius: 2pt; }
   .center-qr { display: flex; justify-content: center; }
-  .qr-custom {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex-shrink: 0;
-  }
-  .qr-caption {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    color: #777;
-    font-size: 7pt;
-    margin-top: 2pt;
-  }
-  .system-note {
-    font-family: 'Cormorant Garamond', Georgia, serif;
-    font-style: italic;
-    color: #dc2626;
-    font-size: 10pt;
-    text-align: center;
-    margin: 6pt 0 0;
-  }
+  .qr-custom { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .qr-caption { font-family: 'Cormorant Garamond', Georgia, serif; color: #777; font-size: 7pt; margin-top: 2pt; }
+  .system-note { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; color: #dc2626; font-size: 10pt; text-align: center; margin: 6pt 0 0; }
   @media print {
-    body {
-      background: #fff !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      color-adjust: exact !important;
-    }
-    .page {
-      box-shadow: none !important;
-      margin: 0 !important;
-      width: 297mm !important;
-      height: 210mm !important;
-      page-break-after: avoid;
-      page-break-inside: avoid;
-    }
+    body { background: #fff !important; margin: 0 !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    .page { box-shadow: none !important; margin: 0 !important; width: 297mm !important; height: 210mm !important; page-break-after: avoid; page-break-inside: avoid; }
     html { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
 </style>
 </head>
 <body>
   <div class="page">
-    <div class="id-block">
-      <p class="id-value">${safeId}</p>
-    </div>
+    <div class="id-block"><p class="id-value">${safeId}</p></div>
     <div class="center">
       <h2 class="title">${safeTitle}</h2>
       <p class="subtitle">This certificate is proudly presented to</p>
       <p class="name">${safeName}</p>
       ${safeAchievement ? `<p class="achievement">${safeAchievement}</p>` : ""}
       ${safeDesc ? `<p class="desc">${safeDesc}</p>` : ""}
-      ${
-        safeEvent
-          ? `<p class="event">${safeEvent}${
-              safeEventDate ? ` • ${safeEventDate}` : ""
-            }</p>`
-          : ""
-      }
+      ${safeEvent ? `<p class="event">${safeEvent}${safeEventDate ? ` • ${safeEventDate}` : ""}</p>` : ""}
     </div>
-    <div class="bottom">
-      ${signatureBlockHtml}
-    </div>
+    <div class="bottom">${signatureBlockHtml}</div>
   </div>
 </body>
 </html>`;
 
-    // ==========================================
-    // Hidden iframe — no navigation, no new window/tab
-    // ==========================================
     const iframe = document.createElement("iframe");
     iframe.setAttribute("aria-hidden", "true");
     iframe.style.position = "fixed";
@@ -714,7 +664,11 @@ const AdminCertificatesClient = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Total Certificates" value={stats.total} icon="📜" />
+          <StatCard
+            label="Loaded / Total"
+            value={`${stats.loaded} / ${total}`}
+            icon="📜"
+          />
           <StatCard label="Club Members" value={stats.internal} icon="👤" />
           <StatCard label="External" value={stats.external} icon="🌐" />
           <StatCard label="Groups" value={stats.groups} icon="📁" />
@@ -723,13 +677,20 @@ const AdminCertificatesClient = () => {
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-md p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-            <input
-              type="text"
-              placeholder="Search by name, email, student ID, or certificate ID..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3D444C] focus:border-transparent"
-            />
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search by name, email, student ID, certificate ID, or event…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3D444C] focus:border-transparent pr-10"
+              />
+              {searching && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                  <span className="inline-block w-3 h-3 border-2 border-gray-300 border-t-[#3D444C] rounded-full animate-spin" />
+                </span>
+              )}
+            </div>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
@@ -782,6 +743,12 @@ const AdminCertificatesClient = () => {
                 </button>
               </>
             )}
+            {debouncedSearch && (
+              <span className="text-xs text-gray-500">
+                · showing {certificates.length} matching result
+                {certificates.length !== 1 ? "s" : ""} of {total}
+              </span>
+            )}
           </div>
         </div>
 
@@ -794,11 +761,13 @@ const AdminCertificatesClient = () => {
           <div className="bg-white rounded-xl shadow-md p-16 text-center">
             <p className="text-4xl mb-4">📭</p>
             <p className="text-gray-500 text-lg">
-              {certificates.length === 0
-                ? "No certificates created yet"
-                : "No certificates match your search"}
+              {debouncedSearch
+                ? "No certificates match your search"
+                : certificates.length === 0
+                  ? "No certificates created yet"
+                  : "No certificates to display"}
             </p>
-            {certificates.length === 0 && (
+            {!debouncedSearch && certificates.length === 0 && (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="mt-4 px-6 py-3 bg-[#3D444C] text-white rounded-xl font-semibold hover:bg-[#2a3037]"
@@ -808,24 +777,55 @@ const AdminCertificatesClient = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredGroups.map((group) => (
-              <CertificateGroup
-                key={group.key}
-                group={group}
-                isExpanded={expandedGroups[group.key]}
-                onToggle={() => toggleGroup(group.key)}
-                selectedIds={selectedIds}
-                onToggleSelectId={toggleSelectId}
-                onToggleSelectGroup={() => toggleSelectGroup(group)}
-                onDeleteSingle={requestDeleteSingle}
-                onPrint={handlePrint}
-                onEdit={requestEdit}
-                onSendEmail={sendCertificateEmail}
-                sendingEmailId={sendingEmailId}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-4">
+              {filteredGroups.map((group) => (
+                <CertificateGroup
+                  key={group.key}
+                  group={group}
+                  isExpanded={expandedGroups[group.key]}
+                  onToggle={() => toggleGroup(group.key)}
+                  selectedIds={selectedIds}
+                  onToggleSelectId={toggleSelectId}
+                  onToggleSelectGroup={() => toggleSelectGroup(group)}
+                  onDeleteSingle={requestDeleteSingle}
+                  onPrint={handlePrint}
+                  onEdit={requestEdit}
+                  onSendEmail={sendCertificateEmail}
+                  sendingEmailId={sendingEmailId}
+                />
+              ))}
+            </div>
+
+            {/* LOAD MORE */}
+            {hasMore && (
+              <div className="mt-6 flex flex-col items-center gap-2">
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="px-8 py-3 bg-[#3D444C] text-white rounded-xl font-semibold hover:bg-[#2a3037] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                >
+                  {loadingMore ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                      Loading…
+                    </>
+                  ) : (
+                    <>Load More ({certificates.length} / {total})</>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500">
+                  Showing {certificates.length} of {total} certificates
+                </p>
+              </div>
+            )}
+
+            {!hasMore && total > PAGE_SIZE && (
+              <p className="mt-6 text-center text-xs text-gray-500">
+                All {total} certificates loaded
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -1237,7 +1237,6 @@ const CertificateRow = ({
         </td>
       </tr>
 
-      {/* Preview modal — unchanged */}
       {showPreview && (
         <tr>
           <td colSpan="8" className="p-0">
@@ -1282,7 +1281,7 @@ const CertificateRow = ({
 };
 
 // ==========================================
-// CERTIFICATE PREVIEW (visual only — used on screen)
+// CERTIFICATE PREVIEW
 // ==========================================
 const CertificatePreview = ({ cert }) => {
   const bgUrl =
@@ -1307,14 +1306,12 @@ const CertificatePreview = ({ cert }) => {
               backgroundPosition: "center",
             }}
           >
-            {/* Certificate ID — no label, matches print */}
             <div className="absolute top-[18%] right-[10%] z-10 text-right">
               <p className="font-mono text-[10px] font-bold text-[#3D444C] leading-tight">
                 {cert.certificateId}
               </p>
             </div>
 
-            {/* Center content */}
             <div className="absolute inset-x-0 top-[20%] bottom-[32%] flex flex-col items-center justify-center text-center px-[8%]">
               <h2
                 className="font-bold text-[#3D444C] mb-2 tracking-wide leading-tight"
@@ -1386,7 +1383,6 @@ const CertificatePreview = ({ cert }) => {
               )}
             </div>
 
-            {/* Bottom: signatures + QR */}
             <div className="absolute bottom-[10%] left-0 right-0 px-[8%]">
               {signatureType === "system_generated" && (
                 <div className="flex flex-col items-center gap-1.5">
@@ -1454,7 +1450,6 @@ const CertificatePreview = ({ cert }) => {
         </div>
       </div>
 
-      {/* Metadata */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm bg-gray-50 rounded-lg p-4">
         <MetaField label="Certificate ID" value={cert.certificateId} mono />
         <MetaField
@@ -1503,7 +1498,7 @@ const CertificatePreview = ({ cert }) => {
 };
 
 // ==========================================
-// SIGNATURE LINE — no icons, just text
+// SIGNATURE LINE
 // ==========================================
 const SignatureLine = ({ label, name }) => (
   <div className="flex flex-col items-center w-full max-w-[140px] mx-auto">

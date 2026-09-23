@@ -1,4 +1,3 @@
-// app/dashboard/events/EventsClient.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -26,6 +25,7 @@ import {
   FaUserPlus,
   FaUserCheck,
   FaTrophy,
+  FaGlobe, // ⬅ NEW
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import DashboardMenu from "@/app/components/layout/DashboardMenu";
@@ -93,6 +93,7 @@ const EventsClient = () => {
     eventStatus: "upcoming",
     preRegistrationRequired: false,
     preRegistrationDeadline: "",
+    externalPreRegistrationAllowed: false, // ⬅ NEW
     eventSpeakerAvailability: false,
     speakerName: "",
     speakerDescription: "",
@@ -110,7 +111,6 @@ const EventsClient = () => {
   const [preToDelete, setPreToDelete] = useState([]);
   const [postToDelete, setPostToDelete] = useState([]);
   const [existingFeedback, setExistingFeedback] = useState([]);
-  const [feedbackToDelete, setFeedbackToDelete] = useState([]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) router.push("/login");
@@ -244,7 +244,6 @@ const EventsClient = () => {
     Object.keys(formData).forEach((k) => fd.append(k, formData[k]));
     fd.append("preResourcesToDelete", JSON.stringify(preToDelete));
     fd.append("postResourcesToDelete", JSON.stringify(postToDelete));
-    fd.append("feedbackToDelete", JSON.stringify(feedbackToDelete));
     if (thumbnailFile) fd.append("eventThumbnail", thumbnailFile);
     preResources.forEach((f) => fd.append("newPreResources", f));
     postResources.forEach((f) => fd.append("newPostResources", f));
@@ -300,6 +299,7 @@ const EventsClient = () => {
       eventStatus: "upcoming",
       preRegistrationRequired: false,
       preRegistrationDeadline: "",
+      externalPreRegistrationAllowed: false, // ⬅ NEW
       eventSpeakerAvailability: false,
       speakerName: "",
       speakerDescription: "",
@@ -316,7 +316,6 @@ const EventsClient = () => {
     setPreToDelete([]);
     setPostToDelete([]);
     setExistingFeedback([]);
-    setFeedbackToDelete([]);
   };
 
   const openEdit = (event) => {
@@ -335,6 +334,8 @@ const EventsClient = () => {
       preRegistrationDeadline: event.preRegistrationDeadline
         ? new Date(event.preRegistrationDeadline).toISOString().split("T")[0]
         : "",
+      externalPreRegistrationAllowed:
+        event.externalPreRegistrationAllowed || false,
       eventSpeakerAvailability: event.eventSpeakerAvailability || false,
       speakerName: event.eventSpeakerCredentials?.speakerName || "",
       speakerDescription:
@@ -352,20 +353,36 @@ const EventsClient = () => {
     setPostResources([]);
     setPreToDelete([]);
     setPostToDelete([]);
-    setFeedbackToDelete([]);
     setShowEditModal(true);
   };
 
   const openFeedback = (event) => {
     setSelectedEvent(event);
     setExistingFeedback(event.feedback || []);
-    setFeedbackToDelete([]);
     setShowFeedbackModal(true);
   };
 
-  const deleteSingleFeedback = (fid) => {
-    setFeedbackToDelete((prev) => [...prev, fid]);
-    setExistingFeedback((prev) => prev.filter((x) => x._id !== fid));
+  const deleteSingleFeedback = async (fid) => {
+    if (!selectedEvent?._id) return;
+    if (!confirm("Delete this feedback permanently?")) return;
+
+    try {
+      const res = await fetch(
+        `/api/secure/events/${selectedEvent._id}/feedback/${fid}`,
+        { method: "DELETE", credentials: "include" },
+      );
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Feedback deleted");
+        setExistingFeedback((prev) => prev.filter((x) => x._id !== fid));
+        // Refresh parent list so feedback count updates
+        fetchEvents(1, false);
+      } else {
+        toast.error(data.message || "Failed to delete feedback");
+      }
+    } catch {
+      toast.error("Failed to delete feedback");
+    }
   };
 
   const getEventThumb = (event) => event.eventThumbnail?.url || DEFAULT_THUMB;
@@ -520,6 +537,12 @@ const EventsClient = () => {
                         <FaClipboardList /> Pre-Reg
                       </span>
                     )}
+                    {/* ⬅ NEW: external pre-reg badge */}
+                    {event.externalPreRegistrationAllowed && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full font-medium">
+                        <FaGlobe /> External
+                      </span>
+                    )}
                     {event.eventSpeakerAvailability && (
                       <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full font-medium">
                         <FaMicrophone /> Speaker
@@ -548,9 +571,7 @@ const EventsClient = () => {
                 </div>
 
                 {/* Card Footer */}
-
                 <div className="px-5 py-3 bg-[#E7E3D8]/50 flex justify-end gap-2 border-t border-[#3D444C]/10">
-                  {/* Pre-Registration */}
                   <button
                     onClick={() => {
                       setSelectedEvent(event);
@@ -561,8 +582,6 @@ const EventsClient = () => {
                   >
                     <FaUserPlus />
                   </button>
-
-                  {/* Attendance */}
                   <button
                     onClick={() => {
                       setSelectedEvent(event);
@@ -573,8 +592,6 @@ const EventsClient = () => {
                   >
                     <FaUserCheck />
                   </button>
-
-                  {/* Achievers */}
                   <button
                     onClick={() => {
                       setSelectedEvent(event);
@@ -585,8 +602,6 @@ const EventsClient = () => {
                   >
                     <FaTrophy />
                   </button>
-
-                  {/* Feedback */}
                   <button
                     onClick={() => openFeedback(event)}
                     className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
@@ -594,8 +609,6 @@ const EventsClient = () => {
                   >
                     <FaEye />
                   </button>
-
-                  {/* Edit */}
                   <button
                     onClick={() => openEdit(event)}
                     className="p-2 text-[#3D444C] hover:bg-[#3D444C]/10 rounded-lg transition-colors"
@@ -603,8 +616,6 @@ const EventsClient = () => {
                   >
                     <FaEdit />
                   </button>
-
-                  {/* Delete */}
                   <button
                     onClick={() => {
                       setSelectedEvent(event);
@@ -859,6 +870,28 @@ const EventsClient = () => {
                     Pre-Registration Required
                   </label>
                 </div>
+
+                {/* ⬅ NEW: External pre-registration toggle — only visible when pre-reg is on */}
+                {formData.preRegistrationRequired && (
+                  <div className="flex items-center gap-3 pl-8">
+                    <input
+                      type="checkbox"
+                      id="externalPreRegistrationAllowed"
+                      name="externalPreRegistrationAllowed"
+                      checked={formData.externalPreRegistrationAllowed}
+                      onChange={handleInputChange}
+                      className="w-5 h-5 accent-[#3D444C] rounded cursor-pointer"
+                    />
+                    <label
+                      htmlFor="externalPreRegistrationAllowed"
+                      className="flex items-center gap-2 text-sm font-medium text-[#3D444C] cursor-pointer"
+                    >
+                      <FaGlobe className="text-[#D3A16D]" />
+                      Allow external (non-member) pre-registration
+                    </label>
+                  </div>
+                )}
+
                 {formData.preRegistrationRequired && (
                   <div>
                     <label className="block text-xs font-semibold text-[#3D444C] mb-1.5">
@@ -1162,71 +1195,21 @@ const EventsClient = () => {
             ) : (
               <div className="space-y-3">
                 {existingFeedback.map((f, i) => (
-                  <div
+                  <FeedbackCard
                     key={f._id || i}
-                    className="bg-[#E7E3D8]/40 rounded-xl p-4 border border-[#3D444C]/10 relative"
-                  >
-                    <button
-                      onClick={() => deleteSingleFeedback(f._id)}
-                      className="absolute top-3 right-3 text-[#994D35] hover:text-red-700"
-                      title="Delete feedback"
-                    >
-                      <FaTrash />
-                    </button>
-
-                    <div className="flex items-center gap-2 mb-2">
-                      {[...Array(5)].map((_, idx) => (
-                        <FaStar
-                          key={idx}
-                          className={
-                            idx < f.rating
-                              ? "text-[#D3A16D] text-sm"
-                              : "text-[#3D444C]/20 text-sm"
-                          }
-                        />
-                      ))}
-                      <span className="text-xs text-[#3D444C]/60 ml-2">
-                        {f.rating}/5
-                      </span>
-                    </div>
-                    {f.comment && (
-                      <p className="text-sm text-[#3D444C]/80 pr-8">
-                        {f.comment}
-                      </p>
-                    )}
-                    <p className="text-[10px] text-[#3D444C]/40 mt-2">
-                      {f.submittedAt
-                        ? new Date(f.submittedAt).toLocaleString()
-                        : ""}
-                    </p>
-                  </div>
+                    feedback={f}
+                    onDelete={() => deleteSingleFeedback(f._id)}
+                  />
                 ))}
-              </div>
-            )}
-
-            {feedbackToDelete.length > 0 && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                ⚠️ {feedbackToDelete.length} feedback item(s) marked for
-                deletion. These will be removed when you save from the Edit
-                modal.
               </div>
             )}
 
             <div className="mt-6 pt-4 border-t border-[#3D444C]/10">
               <button
-                onClick={() => {
-                  // Apply deletions by directly calling the edit endpoint
-                  if (feedbackToDelete.length > 0) {
-                    setSelectedEvent({
-                      ...selectedEvent,
-                      feedback: feedbackToDelete,
-                    });
-                  }
-                  setShowFeedbackModal(false);
-                }}
-                className="w-full px-4 py-3 bg-[#3D444C] text-[#E7E3D8] rounded-lg hover:bg-[#994D35] font-medium transition-colors"
+                onClick={() => setShowFeedbackModal(false)}
+                className="p-2 hover:bg-[#3D444C]/10 rounded-full transition-colors"
               >
-                Close
+                <FaTimes className="text-[#3D444C]" />
               </button>
             </div>
           </div>
@@ -1297,6 +1280,125 @@ const EventsClient = () => {
           onSaved={() => fetchEvents(1, false)}
         />
       )}
+    </div>
+  );
+};
+
+/* ============================================================
+   FEEDBACK CARD — full info per entry
+   ============================================================ */
+const FeedbackCard = ({ feedback: f, onDelete }) => {
+  const isGuest = !f.userId;
+
+  // Name resolution
+  let displayName = "Anonymous";
+  if (f.userId) {
+    // Member — try common fields the API might have populated
+    displayName = f.userFullName || f.userName || f.memberName || "Member";
+  } else if (f.externalName) {
+    displayName = f.externalName;
+  } else if (f.externalEmail) {
+    displayName = f.externalEmail.split("@")[0] || "Guest";
+  }
+
+  // Contact info
+  const email = f.userEmail || f.externalEmail || "";
+  const studentId = f.userStudentId || "";
+  const institution =
+    f.userDepartment || f.userInstitution || f.externalOrganization || "";
+  const phone = f.userPhone || "";
+
+  return (
+    <div className="bg-[#E7E3D8]/40 rounded-xl p-4 border border-[#3D444C]/10 relative">
+      {/* Delete button */}
+      <button
+        onClick={onDelete}
+        className="absolute top-3 right-3 text-[#994D35] hover:text-red-700 p-1 rounded hover:bg-red-50"
+        title="Delete this feedback"
+      >
+        <FaTrash size={12} />
+      </button>
+
+      {/* Header row: name + role badge + rating */}
+      <div className="flex flex-wrap items-center gap-2 mb-3 pr-8">
+        <span className="text-sm font-semibold text-[#3D444C]">
+          {displayName}
+        </span>
+
+        {/* Member / Guest badge */}
+        {isGuest ? (
+          <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">
+            Guest
+          </span>
+        ) : (
+          <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">
+            Member
+          </span>
+        )}
+
+        {/* Rating pill */}
+        <span
+          className={`ml-auto inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
+            f.rating >= 4
+              ? "bg-green-100 text-green-700"
+              : f.rating >= 3
+                ? "bg-yellow-100 text-yellow-700"
+                : "bg-red-100 text-red-700"
+          }`}
+        >
+          <FaStar size={9} /> {f.rating}/5
+        </span>
+      </div>
+
+      {/* Contact / identity info */}
+      {(email || studentId || institution || phone) && (
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-[11px] text-[#3D444C]/60">
+          {email && (
+            <span className="flex items-center gap-1">
+              <span className="text-[#D3A16D]">✉</span>
+              <span className="truncate max-w-[180px]">{email}</span>
+            </span>
+          )}
+          {studentId && (
+            <span className="flex items-center gap-1">
+              <span className="text-[#D3A16D]">🎓</span>
+              ID: <span className="font-mono">{studentId}</span>
+            </span>
+          )}
+          {institution && (
+            <span className="flex items-center gap-1">
+              <span className="text-[#D3A16D]">🏛</span>
+              <span className="truncate max-w-[180px]">{institution}</span>
+            </span>
+          )}
+          {phone && (
+            <span className="flex items-center gap-1">
+              <span className="text-[#D3A16D]">☎</span>
+              {phone}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Comment */}
+      {f.comment ? (
+        <p className="text-sm text-[#3D444C]/85 bg-white rounded-lg p-3 border border-[#3D444C]/10 whitespace-pre-wrap">
+          {f.comment}
+        </p>
+      ) : (
+        <p className="text-xs italic text-[#3D444C]/40">No comment provided.</p>
+      )}
+
+      {/* Timestamp */}
+      <p className="text-[10px] text-[#3D444C]/40 mt-2">
+        Submitted:{" "}
+        {f.submittedAt
+          ? new Date(f.submittedAt).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })
+          : "unknown"}
+      </p>
     </div>
   );
 };

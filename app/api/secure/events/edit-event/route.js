@@ -136,6 +136,10 @@ export async function PUT(request) {
     const deadline = formData.get("preRegistrationDeadline");
     event.preRegistrationDeadline =
       event.preRegistrationRequired && deadline ? new Date(deadline) : undefined;
+    // ⬅ NEW — only meaningful when pre-registration is required
+    event.externalPreRegistrationAllowed = event.preRegistrationRequired
+      ? formData.get("externalPreRegistrationAllowed") === "true"
+      : false;
     event.eventSpeakerAvailability =
       formData.get("eventSpeakerAvailability") === "true";
     event.eventSpeakerCredentials = {

@@ -57,7 +57,22 @@ const EventSchema = new mongoose.Schema(
     ],
     feedback: [
       {
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          default: null,
+        },
+        externalEmail: {
+          type: String,
+          trim: true,
+          lowercase: true,
+          default: "",
+        },
+        externalName: {
+          type: String,
+          trim: true,
+          default: "",
+        },
         rating: { type: Number, min: 1, max: 5 },
         comment: String,
         submittedAt: { type: Date, default: Date.now },
@@ -96,6 +111,10 @@ const EventSchema = new mongoose.Schema(
     },
     preRegistrationDeadline: {
       type: Date,
+    },
+    externalPreRegistrationAllowed: {
+      type: Boolean,
+      default: false,
     },
     preRegistrationUsers: [
       {

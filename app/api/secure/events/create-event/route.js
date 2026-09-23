@@ -114,6 +114,9 @@ export async function POST(request) {
     const preRegistrationRequired =
       formData.get("preRegistrationRequired") === "true";
     const preRegistrationDeadline = formData.get("preRegistrationDeadline");
+    // ⬅ NEW
+    const externalPreRegistrationAllowed =
+      formData.get("externalPreRegistrationAllowed") === "true";
     const eventSpeakerAvailability =
       formData.get("eventSpeakerAvailability") === "true";
     const speakerName = formData.get("speakerName") || "";
@@ -148,6 +151,10 @@ export async function POST(request) {
       preRegistrationDeadline: preRegistrationRequired
         ? new Date(preRegistrationDeadline)
         : undefined,
+      // ⬅ NEW — only meaningful when pre-registration is required
+      externalPreRegistrationAllowed: preRegistrationRequired
+        ? externalPreRegistrationAllowed
+        : false,
       eventSpeakerAvailability,
       eventSpeakerCredentials: {
         speakerName,
