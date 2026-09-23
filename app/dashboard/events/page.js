@@ -1,6 +1,7 @@
 // app/dashboard/events/page.js
 import React from "react";
-import EventsClient from "./EventsClient";
+import EventsClient from "./EventClient";
+
 
 export const metadata = {
   title: "Events - ACC Career Club",

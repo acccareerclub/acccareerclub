@@ -14,7 +14,7 @@ const EventSchema = new mongoose.Schema(
       url: {
         type: String,
         default:
-          "https://res.cloudinary.com/ffuatrrt/image/upload/v1790075521/invitation_seminar_j2xrio.jpg",
+          "https://res.cloudinary.com/ffuatrrt/image/upload/v1790148020/event-invitation_alzpch.jpg",
       },
     },
     eventDescription: {
@@ -107,23 +107,62 @@ const EventSchema = new mongoose.Schema(
           type: String,
           trim: true,
         },
+        email: {
+          type: String,
+          trim: true,
+        },
+        institution: {
+          type: String,
+          trim: true,
+          default: "", // e.g., "BRAC University", "Notre Dame College"
+        },
         identificationNo: {
           type: String,
           trim: true,
         },
       },
     ],
-    eventSpeakerAvailability:{
-        type: Boolean,
+    eventSpeakerAvailability: {
+      type: Boolean,
+      default: false,
     },
-    eventSpeakerCredentials:{
-        speakerName: {type: String,},
-        speakerDescription: {type: String},
+    eventSpeakerCredentials: {
+      speakerName: { type: String },
+      speakerDescription: { type: String },
     },
     eventAttendees: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
+      },
+    ],
+    // ✅ NEW: External (non-member) attendees
+    externalAttendees: [
+      {
+        name: {
+          type: String,
+          trim: true,
+          required: true,
+        },
+        email: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        institution: {
+          type: String,
+          trim: true,
+          default: "", // Their college/university
+        },
+        identificationNo: {
+          type: String,
+          trim: true,
+          default: "",
+        },
+        addedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
     achievers: [
@@ -132,8 +171,17 @@ const EventSchema = new mongoose.Schema(
         name: {
           type: String,
         },
-        IdentificationNo: {
+        name: {
           type: String,
+          trim: true,
+        },
+        email: {
+          type: String,
+          trim: true,
+        },
+        identificationNo: {
+          type: String,
+          trim: true,
         },
       },
     ],
