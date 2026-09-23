@@ -2,7 +2,9 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../../lib/mongodb";
 import Session from "../../../../models/Session";
+import User from "../../../../models/User";
 import { getCurrentUser } from "../../../../lib/authUtils";
+import { sendFeedbackRequestEmail } from "../../../../lib/mailsystem";
 import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
@@ -100,7 +102,20 @@ export async function PUT(request) {
         { success: false, message: "Not authenticated" },
         { status: 401 },
       );
+
     const decoded = getCurrentUser(token);
+    const allowedRoles = [
+      "prefect",
+      "itsecretary",
+      "modarator",
+      "assistant_prefect",
+    ];
+    if (!decoded || !allowedRoles.includes(decoded.role)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 403 },
+      );
+    }
 
     const formData = await request.formData();
     const sessionId = formData.get("sessionId");
@@ -111,6 +126,9 @@ export async function PUT(request) {
         { success: false, message: "Session not found" },
         { status: 404 },
       );
+
+    // ✅ Capture the OLD status BEFORE updating
+    const previousStatus = session.sessionStatus;
 
     // Update basic fields
     session.sessionTitle = formData.get("sessionTitle");
@@ -124,6 +142,10 @@ export async function PUT(request) {
     session.sessionStatus = formData.get("sessionStatus");
     session.isFeatured = formData.get("isFeatured") === "true";
     session.isActive = formData.get("isActive") === "true";
+
+    // ✅ Detect the transition: previousStatus !== "completed" AND newStatus === "completed"
+    const shouldSendFeedbackEmails =
+      previousStatus !== "completed" && session.sessionStatus === "completed";
 
     // Handle Banner
     const removeBanner = formData.get("removeBanner") === "true";
@@ -207,11 +229,68 @@ export async function PUT(request) {
       );
     }
 
+    // ✅ Save the session first
     await session.save();
+
+    // ✅ Send feedback request emails ONLY when transitioning TO completed
+    let feedbackEmailsSent = 0;
+    let feedbackEmailsFailed = 0;
+
+    if (shouldSendFeedbackEmails && session.sessionAttendees?.length > 0) {
+      try {
+        // Fetch all attendees with valid emails
+        const attendees = await User.find({
+          _id: { $in: session.sessionAttendees },
+          email: { $exists: true, $ne: "" },
+        })
+          .select("fullName email")
+          .lean();
+
+        console.log(
+          `📧 Status transitioned: "${previousStatus}" → "completed". Sending feedback emails to ${attendees.length} attendee(s)...`
+        );
+
+        // Send all emails in parallel (partial failures don't break others)
+        const emailResults = await Promise.allSettled(
+          attendees.map((user) =>
+            sendFeedbackRequestEmail({
+              fullName: user.fullName,
+              email: user.email,
+              sessionTitle: session.sessionTitle,
+              sessionId: session._id.toString(),
+              sessionDate: session.sessionDate,
+            }),
+          ),
+        );
+
+        feedbackEmailsSent = emailResults.filter(
+          (r) => r.status === "fulfilled" && r.value?.success,
+        ).length;
+        feedbackEmailsFailed = attendees.length - feedbackEmailsSent;
+
+        console.log(
+          `✅ Feedback emails: ${feedbackEmailsSent} sent, ${feedbackEmailsFailed} failed`,
+        );
+      } catch (emailErr) {
+        // Don't block the response if emails fail
+        console.error(
+          "❌ Failed to send feedback emails:",
+          emailErr.message,
+        );
+      }
+    } else if (shouldSendFeedbackEmails && !session.sessionAttendees?.length) {
+      console.log(
+        `ℹ️ Session transitioned to completed but no attendees to notify.`
+      );
+    }
+
     return NextResponse.json({
       success: true,
       message: "Session updated successfully",
       session,
+      feedbackEmails: shouldSendFeedbackEmails
+        ? { sent: feedbackEmailsSent, failed: feedbackEmailsFailed }
+        : null,
     });
   } catch (error) {
     console.error("Edit session error:", error);

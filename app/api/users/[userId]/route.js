@@ -22,7 +22,7 @@ export async function GET(request, { params }) {
           success: false,
           message: "Not authenticated",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -33,7 +33,7 @@ export async function GET(request, { params }) {
           success: false,
           message: "Invalid token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -49,7 +49,7 @@ export async function GET(request, { params }) {
           success: false,
           message: "User not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -79,6 +79,9 @@ export async function GET(request, { params }) {
         lastLogin: user.lastLogin,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        achievements: user.achievements || [],
+        accCareerClubAchievements: user.accCareerClubAchievements || [],
+        alumniInfo: user.alumniInfo || {},
       },
     });
   } catch (error) {
@@ -87,83 +90,85 @@ export async function GET(request, { params }) {
       {
         success: false,
         message: "Failed to get user data",
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PUT(request, { params }) {
   try {
-    // ✅ Fix: Await the params Promise
     const { userId } = await params;
-
     console.log("Updating user with ID:", userId);
 
-    // Verify authentication
     const token =
       request.cookies.get("auth_token")?.value ||
       request.headers.get("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Not authenticated",
-        },
-        { status: 401 }
+        { success: false, message: "Not authenticated" },
+        { status: 401 },
       );
     }
 
     const decoded = getCurrentUser(token);
     if (!decoded) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Invalid token",
-        },
-        { status: 401 }
+        { success: false, message: "Invalid token" },
+        { status: 401 },
       );
     }
 
-    // Connect to database
     await connectToDatabase();
 
-    // Find user
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "User not found",
-        },
-        { status: 404 }
+        { success: false, message: "User not found" },
+        { status: 404 },
       );
     }
 
-    // Parse request body
     const body = await request.json();
 
-    // Fields that can be updated
+    // ✅ Role check for accCareerClubAchievements
+    const adminRoles = [
+      "prefect",
+      "itsecretary",
+      "modarator",
+      "assistant_prefect",
+    ];
+    const isAdmin = adminRoles.includes(decoded.role);
+
+    if (!isAdmin && body.accCareerClubAchievements !== undefined) {
+      delete body.accCareerClubAchievements;
+      console.warn(
+        `⚠️ Non-admin ${decoded.userId} tried to update accCareerClubAchievements — blocked.`,
+      );
+    }
+
     const allowedFields = [
-      'fullName',
-      'phone',
-      'department',
-      'personalInfo',
-      'guardianInfo',
-      'academicInfo',
-      'skills',
-      'interests',
-      'customSkills',
-      'customInterests',
-      'experience',
-      'careerClubInfo',
-      'declaration',
-      'noticeMail'
+      "fullName",
+      "phone",
+      "department",
+      "personalInfo",
+      "guardianInfo",
+      "academicInfo",
+      "skills",
+      "interests",
+      "customSkills",
+      "customInterests",
+      "experience",
+      "achievements",
+      "accCareerClubAchievements", // ← still in the list, but guarded above
+      "careerClubInfo",
+      "declaration",
+      "noticeMail",
     ];
 
-    // Update only allowed fields
     let hasUpdates = false;
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
@@ -176,16 +181,15 @@ export async function PUT(request, { params }) {
       return NextResponse.json(
         {
           success: false,
-          message: "No valid fields to update",
+          message:
+            "No valid fields to update. Some fields may be restricted to admins only.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // Save the updated user
     await user.save();
 
-    // Return updated user data
     const userData = {
       id: user._id,
       fullName: user.fullName,
@@ -205,6 +209,9 @@ export async function PUT(request, { params }) {
       customInterests: user.customInterests || [],
       experience: user.experience || {},
       careerClubInfo: user.careerClubInfo || {},
+      achievements: user.achievements || [],
+      accCareerClubAchievements: user.accCareerClubAchievements || [],
+      alumniInfo: user.alumniInfo || {},
       declaration: user.declaration || false,
       lastLogin: user.lastLogin,
       createdAt: user.createdAt,
@@ -222,9 +229,10 @@ export async function PUT(request, { params }) {
       {
         success: false,
         message: "Failed to update profile",
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

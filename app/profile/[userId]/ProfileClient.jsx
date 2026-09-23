@@ -25,6 +25,9 @@ import {
   FaCamera,
   FaSpinner,
   FaKey,
+  FaTrophy,
+  FaMedal,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { MdOutlineEmail, MdPhone as MdPhoneIcon } from "react-icons/md";
 import {
@@ -37,6 +40,11 @@ import EditEmailModal from "../../components/EditEmailModal";
 import { SkillsModal } from "../../components/SkillsModal";
 import Image from "next/image";
 import Link from "next/link";
+import ReactDOMServer from "react-dom/server";
+import CVGenerator from "../../components/CVGenerator";
+import UniversalCVGenerator from "../../components/UniversalCVGenerator";
+import ExperienceModal from "../../components/ExperienceModal";
+import AchievementsModal from "../../components/AchievementsModal";
 
 // Department options (same as signup)
 const DEPARTMENTS = [
@@ -132,6 +140,10 @@ const ProfileClient = () => {
   const [editingData, setEditingData] = useState(null);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showEditEmailModal, setShowEditEmailModal] = useState(false);
+  const [showExperienceModal, setShowExperienceModal] = useState(false);
+  const [showAchievementsModal, setShowAchievementsModal] = useState(false);
+  const [showClubAchievementsModal, setShowClubAchievementsModal] =
+    useState(false);
 
   // Fetch user data
   useEffect(() => {
@@ -183,6 +195,30 @@ const ProfileClient = () => {
       setImagePreview(user.personalInfo.profilePicture);
     }
   }, [user]);
+
+  // Experience
+  const handleExperienceSave = (experienceData) => {
+    setFormData({
+      ...formData,
+      experience: experienceData,
+    });
+  };
+
+  // Achievements (user-editable)
+  const handleAchievementsSave = (achievementsData) => {
+    setFormData({
+      ...formData,
+      achievements: achievementsData,
+    });
+  };
+
+  // ACC Career Club Achievements (admin-only)
+  const handleClubAchievementsSave = (achievementsData) => {
+    setFormData({
+      ...formData,
+      accCareerClubAchievements: achievementsData,
+    });
+  };
 
   // Image upload handlers
   const handleImageUpload = async (event) => {
@@ -311,8 +347,6 @@ const ProfileClient = () => {
       },
     });
   };
-
-  // In ProfileClient.jsx, add this after the loading and error checks
 
   // Check if user is trying to view someone else's profile
   if (authUser?.role === "student" && authUser?.id !== userId) {
@@ -615,8 +649,56 @@ const ProfileClient = () => {
   };
 
   const handleCancel = () => {
-    setFormData(user);
-    setIsEditing(false);
+    if (
+      confirm(
+        "Are you sure you want to cancel? All unsaved changes will be lost.",
+      )
+    ) {
+      setFormData(user);
+      setIsEditing(false);
+    }
+  };
+
+  const handleDownloadUniversalCV = () => {
+    if (!user) {
+      toast.error("Profile not loaded");
+      return;
+    }
+
+    const cvHTML = ReactDOMServer.renderToStaticMarkup(
+      <UniversalCVGenerator user={user} />,
+    );
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow pop-ups to download the CV");
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(cvHTML);
+    printWindow.document.close();
+  };
+
+  const handleDownloadProfile = () => {
+    if (!user) {
+      toast.error("Profile not loaded");
+      return;
+    }
+
+    const cvHTML = ReactDOMServer.renderToStaticMarkup(
+      <CVGenerator user={user} />,
+    );
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Please allow pop-ups to download the CV");
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(cvHTML);
+    printWindow.document.close();
   };
 
   const formatDate = (dateString) => {
@@ -698,7 +780,8 @@ const ProfileClient = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      {/* Add bottom padding when editing so floating bar doesn't cover content */}
+      <div className={`max-w-7xl mx-auto ${isEditing ? "pb-32" : ""}`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
           <div>
@@ -722,7 +805,7 @@ const ProfileClient = () => {
                   <span>Edit Profile</span>
                 </button>
               ) : (
-                <>
+                <div className="hidden lg:flex gap-3">
                   <button
                     onClick={handleCancel}
                     disabled={isSaving}
@@ -743,7 +826,7 @@ const ProfileClient = () => {
                     )}
                     <span>{isSaving ? "Saving..." : "Save Changes"}</span>
                   </button>
-                </>
+                </div>
               )}
             </div>
           }
@@ -873,6 +956,57 @@ const ProfileClient = () => {
                     </button>
                   </div>
                 )}
+              </div>
+
+              {/* Download Buttons */}
+              <div className="p-3 space-y-2">
+                {/* Role-based Profile Download — only for admins */}
+                {["itsecretary", "prefect", "assistant_prefect"].includes(
+                  authUser?.role,
+                ) && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadProfile}
+                    className="w-full flex items-center justify-center gap-3 bg-[#3D444C] text-[#E7E3D8] px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] hover:bg-[#994D35] transition-all duration-300 group cursor-pointer"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <span>Download Profile (Official)</span>
+                  </button>
+                )}
+
+                {/* Universal CV — for everyone */}
+                <button
+                  type="button"
+                  onClick={handleDownloadUniversalCV}
+                  className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-[#D3A16D] to-[#994D35] text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group cursor-pointer"
+                >
+                  <svg
+                    className="w-5 h-5 group-hover:animate-bounce"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span>Download CV</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1792,6 +1926,209 @@ const ProfileClient = () => {
               </div>
             </div>
 
+            {/* Experience & Activities */}
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <FaBriefcase className="text-[#994D35] text-xl" />
+                  <h3 className="text-xl font-bold text-[#3D444C]">
+                    Experience & Activities
+                  </h3>
+                </div>
+                {isEditing && (
+                  <button
+                    onClick={() => setShowExperienceModal(true)}
+                    className="flex items-center gap-1 text-[#994D35] hover:text-[#D3A16D] transition-colors text-sm bg-[#E7E3D8] px-3 py-1 rounded-lg"
+                  >
+                    <FaPencilAlt className="text-xs" /> Edit
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                {user?.experience?.clubExperience?.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">
+                      Club Experience
+                    </h4>
+                    <div className="space-y-2">
+                      {user.experience.clubExperience.map((club, i) => (
+                        <div
+                          key={i}
+                          className="border-l-4 border-[#D3A16D] pl-3 py-1"
+                        >
+                          <p className="font-semibold text-[#3D444C]">
+                            {club.position || "Member"} — {club.clubName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {club.duration}
+                          </p>
+                          {club.responsibility && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              {club.responsibility}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {user?.experience?.jobOrInternship?.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">
+                      Job / Internship
+                    </h4>
+                    <div className="space-y-2">
+                      {user.experience.jobOrInternship.map((job, i) => (
+                        <div
+                          key={i}
+                          className="border-l-4 border-[#994D35] pl-3 py-1"
+                        >
+                          <p className="font-semibold text-[#3D444C]">
+                            {job.designation} — {job.organization}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {job.duration}
+                          </p>
+                          {job.responsibility && (
+                            <p className="text-sm text-gray-600 mt-1">
+                              {job.responsibility}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {user?.experience?.extraCurricularActivities && (
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">
+                      Extra-Curricular Activities
+                    </h4>
+                    <p className="text-sm text-[#3D444C]">
+                      {user.experience.extraCurricularActivities}
+                    </p>
+                  </div>
+                )}
+
+                {!user?.experience?.clubExperience?.length &&
+                  !user?.experience?.jobOrInternship?.length &&
+                  !user?.experience?.extraCurricularActivities && (
+                    <p className="text-gray-500 text-sm italic">
+                      No experience added yet.
+                    </p>
+                  )}
+              </div>
+            </div>
+
+            {/* Achievements (user-editable) */}
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <FaTrophy className="text-[#994D35] text-xl" />
+                  <h3 className="text-xl font-bold text-[#3D444C]">
+                    Achievements
+                  </h3>
+                </div>
+                {isEditing && (
+                  <button
+                    onClick={() => setShowAchievementsModal(true)}
+                    className="flex items-center gap-1 text-[#994D35] hover:text-[#D3A16D] transition-colors text-sm bg-[#E7E3D8] px-3 py-1 rounded-lg"
+                  >
+                    <FaPencilAlt className="text-xs" /> Edit
+                  </button>
+                )}
+              </div>
+
+              {user?.achievements?.length > 0 ? (
+                <div className="space-y-3">
+                  {user.achievements.map((ach, i) => (
+                    <div
+                      key={i}
+                      className="border-l-4 border-[#D3A16D] pl-3 py-1"
+                    >
+                      <p className="font-semibold text-[#3D444C]">
+                        {ach.title}
+                      </p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
+                        {ach.position && <span>🏆 {ach.position}</span>}
+                        {ach.organizer && <span>🏛 {ach.organizer}</span>}
+                        {ach.level && (
+                          <span className="capitalize">📍 {ach.level}</span>
+                        )}
+                        {ach.date && <span>📅 {ach.date}</span>}
+                        {ach.location && <span>🗺 {ach.location}</span>}
+                      </div>
+                      {ach.projectOrCompetitionName && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          <strong>Project/Contest:</strong>{" "}
+                          {ach.projectOrCompetitionName}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm italic">
+                  No achievements added yet.
+                </p>
+              )}
+            </div>
+
+            {/* ACC Career Club Achievements (admin-only editing) */}
+            <div className="bg-white rounded-2xl shadow-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <FaMedal className="text-[#994D35] text-xl" />
+                  <h3 className="text-xl font-bold text-[#3D444C]">
+                    ACC Career Club Achievements
+                  </h3>
+                </div>
+                {[
+                  "prefect",
+                  "assistant_prefect",
+                  "modarator",
+                  "itsecretary",
+                ].includes(authUser?.role) && (
+                  <button
+                    onClick={() => setShowClubAchievementsModal(true)}
+                    className="flex items-center gap-1 text-[#994D35] hover:text-[#D3A16D] transition-colors text-sm bg-[#E7E3D8] px-3 py-1 rounded-lg"
+                  >
+                    <FaPencilAlt className="text-xs" /> Edit
+                  </button>
+                )}
+              </div>
+
+              {user?.accCareerClubAchievements?.length > 0 ? (
+                <div className="space-y-3">
+                  {user.accCareerClubAchievements.map((ach, i) => (
+                    <div
+                      key={i}
+                      className="border-l-4 border-[#994D35] pl-3 py-1"
+                    >
+                      <p className="font-semibold text-[#3D444C]">
+                        {ach.eventName || "Club Achievement"}
+                      </p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
+                        {ach.position && <span>🏆 {ach.position}</span>}
+                        {ach.organizer && <span>🏛 {ach.organizer}</span>}
+                        {ach.date && <span>📅 {ach.date}</span>}
+                        {ach.certificateId && (
+                          <span>📜 {ach.certificateId}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm italic">
+                  No ACC Career Club achievements yet.
+                </p>
+              )}
+            </div>
+
             {/* Career Club Information */}
             <div className="bg-white rounded-2xl shadow-xl p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -1968,6 +2305,63 @@ const ProfileClient = () => {
         </div>
       </div>
 
+      {/* ============================================
+          FLOATING ACTION BAR (Edit Mode)
+          ============================================ */}
+      {isEditing && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+            <div className="pointer-events-auto bg-[#3D444C] rounded-2xl shadow-2xl border border-[#D3A16D]/30 p-4 sm:p-5 animate-[slideUp_0.3s_ease-out]">
+              <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+                {/* Warning message */}
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-[#D3A16D]/20 flex items-center justify-center shrink-0">
+                    <FaExclamationTriangle className="text-[#D3A16D] text-lg" />
+                  </div>
+                  <div className="text-[#E7E3D8] text-sm">
+                    <p className="font-bold text-[#D3A16D]">
+                      You're in Edit Mode
+                    </p>
+                    <p className="text-[#E7E3D8]/80 text-xs mt-0.5">
+                      Without final saving, all changes will be lost.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-3 w-full sm:w-auto">
+                  <button
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white/10 text-[#E7E3D8] px-5 py-3 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium disabled:opacity-50"
+                  >
+                    <FaTimes />
+                    <span>Cancel</span>
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-[#D3A16D] to-[#994D35] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? (
+                      <>
+                        <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaSave />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Image Preview Modal */}
       {showImageModal && imagePreview && (
         <div
@@ -2091,6 +2485,29 @@ const ProfileClient = () => {
         onClose={() => setShowEditEmailModal(false)}
         currentEmail={user?.email}
         userId={userId}
+      />
+
+      <ExperienceModal
+        isOpen={showExperienceModal}
+        onClose={() => setShowExperienceModal(false)}
+        onSave={handleExperienceSave}
+        experience={user?.experience || {}}
+      />
+
+      <AchievementsModal
+        isOpen={showAchievementsModal}
+        onClose={() => setShowAchievementsModal(false)}
+        onSave={handleAchievementsSave}
+        achievements={user?.achievements || []}
+        isAdminMode={false}
+      />
+
+      <AchievementsModal
+        isOpen={showClubAchievementsModal}
+        onClose={() => setShowClubAchievementsModal(false)}
+        onSave={handleClubAchievementsSave}
+        achievements={user?.accCareerClubAchievements || []}
+        isAdminMode={true}
       />
     </div>
   );

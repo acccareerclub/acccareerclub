@@ -16,6 +16,7 @@ import {
   FaChevronRight,
 } from 'react-icons/fa';
 import { FaUsersViewfinder } from "react-icons/fa6";
+import { MdOutlineEmojiEvents } from "react-icons/md";
 
 const DashboardMenu = () => {
   const pathname = usePathname();
@@ -43,16 +44,22 @@ const DashboardMenu = () => {
       href: '/dashboard/notice',
     },
     {
-      id: 'jobs',
-      label: 'Jobs',
-      icon: FaBriefcase,
-      href: '/dashboard/jobs',
-    },
-    {
       id: 'sessions',
       label: 'Sessions',
       icon: FaUsersViewfinder,
       href: '/dashboard/sessions',
+    },
+    {
+      id: 'events',
+      label: 'Events',
+      icon: MdOutlineEmojiEvents,
+      href: '/dashboard/events',
+    },
+    {
+      id: 'jobs',
+      label: 'Jobs',
+      icon: FaBriefcase,
+      href: '/dashboard/jobs',
     },
     {
       id: 'companies',

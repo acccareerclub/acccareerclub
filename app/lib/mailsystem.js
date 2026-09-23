@@ -1187,3 +1187,160 @@ export const sendAlumniWelcomeEmail = async ({
     html,
   });
 };
+
+
+// ==========================================
+// Send feedback request email after a session is completed
+// ==========================================
+export const sendFeedbackRequestEmail = async ({
+  fullName,
+  email,
+  sessionTitle,
+  sessionId,
+  sessionDate,
+}) => {
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const feedbackUrl = `${baseUrl}/sessions/${sessionId}`;
+
+  const subject = `⭐ Share Your Feedback: ${sessionTitle}`;
+
+  // Format date nicely
+  const formattedDate = sessionDate
+    ? new Date(sessionDate).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "";
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Share Your Feedback</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: #f0f0f0;
+          -webkit-text-size-adjust: 100%;
+        }
+        @media only screen and (max-width: 600px) {
+          .container { border-radius: 0 !important; margin: 0 8px !important; }
+          .header { padding: 24px 16px !important; }
+          .header h1 { font-size: 20px !important; }
+          .content { padding: 20px 16px 24px !important; }
+          .session-box { padding: 16px !important; }
+          .btn { display: block !important; padding: 13px 20px !important; font-size: 15px !important; }
+        }
+      </style>
+    </head>
+    <body style="margin:0;padding:0;background-color:#f0f0f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f0f0;padding:16px 8px;">
+        <tr>
+          <td align="center">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+              
+              <!-- Header -->
+              <tr>
+                <td style="background:linear-gradient(135deg, #3D444C, #994D35);padding:32px 24px;text-align:center;">
+                  <div style="font-size:44px;line-height:1;margin-bottom:8px;">⭐</div>
+                  <h1 style="color:#E7E3D8;margin:0;font-size:24px;font-weight:700;letter-spacing:0.5px;">
+                    Your Feedback Matters
+                  </h1>
+                  <p style="color:#D3A16D;margin:8px 0 0 0;font-size:14px;">
+                    ACC Career Club • Adamjee Cantonment College
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style="padding:30px 24px 32px;">
+                  <p style="color:#3D444C;font-size:18px;font-weight:700;margin:0 0 14px 0;">
+                    Dear ${fullName},
+                  </p>
+
+                  <p style="color:#4B5563;font-size:15px;line-height:1.8;margin:0 0 16px 0;">
+                    Thank you for attending the recent session. We hope you found it valuable and
+                    gained insights you can apply to your journey!
+                  </p>
+
+                  <p style="color:#4B5563;font-size:15px;line-height:1.8;margin:0 0 24px 0;">
+                    Your thoughts are incredibly important to us — they help us improve future sessions
+                    and make sure we're delivering the best experience possible for all club members.
+                  </p>
+
+                  <!-- Session Info Box -->
+                  <div style="background:#E7E3D8;border-left:4px solid #D3A16D;border-radius:10px;padding:20px;margin:0 0 24px 0;">
+                    <p style="color:#6B7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin:0 0 8px 0;">
+                      Session Details
+                    </p>
+                    <p style="color:#3D444C;font-size:17px;font-weight:700;margin:0 0 8px 0;line-height:1.4;">
+                      ${sessionTitle}
+                    </p>
+                    ${
+                      formattedDate
+                        ? `<p style="color:#6B7280;font-size:13px;margin:0;">📅 ${formattedDate}</p>`
+                        : ""
+                    }
+                  </div>
+
+                  <!-- CTA Box -->
+                  <div style="background:linear-gradient(135deg, #F9FAFB, #E7E3D8);border-radius:12px;padding:24px;margin:0 0 24px 0;text-align:center;">
+                    <p style="color:#994D35;font-size:32px;line-height:1;margin:0 0 10px 0;">
+                      💬
+                    </p>
+                    <p style="color:#3D444C;font-size:16px;font-weight:700;margin:0 0 6px 0;">
+                      Takes Less Than 30 Seconds
+                    </p>
+                    <p style="color:#4B5563;font-size:14px;line-height:1.6;margin:0 0 18px 0;">
+                      Rate the session and share your honest thoughts. Every response helps us grow!
+                    </p>
+                    <a href="${feedbackUrl}" 
+                       style="display:inline-block;background:#994D35;color:#ffffff;padding:14px 40px;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(153,77,53,0.3);">
+                      Give Feedback →
+                    </a>
+                  </div>
+
+                  <p style="color:#6B7280;font-size:13px;line-height:1.7;margin:0 0 16px 0;text-align:center;">
+                    If the button above doesn't work, copy and paste this link into your browser:
+                  </p>
+                  <p style="color:#994D35;font-size:12px;text-align:center;word-break:break-all;margin:0 0 24px 0;">
+                    <a href="${feedbackUrl}" style="color:#994D35;text-decoration:underline;">${feedbackUrl}</a>
+                  </p>
+
+                  <p style="color:#4B5563;font-size:14px;line-height:1.8;margin:0 0 8px 0;">
+                    Thank you for being a valued member of our community.
+                  </p>
+                  <p style="color:#3D444C;font-size:14px;font-weight:600;margin:8px 0 0 0;">
+                    — ACC Career Club Team
+                  </p>
+
+                  <!-- Footer -->
+                  <div style="text-align:center;padding:24px 0 0 0;border-top:1px solid #E5E7EB;margin-top:24px;">
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      This is an automated message from ACC Career Club.
+                    </p>
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      © ${new Date().getFullYear()} ACC Career Club - Adamjee Cantonment College
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: email,
+    subject,
+    html,
+  });
+};

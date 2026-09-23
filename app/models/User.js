@@ -237,6 +237,68 @@ const UserSchema = new mongoose.Schema(
     },
 
     // ==========================================
+    // 7.1 ACHIEVEMENTS (Optional)
+    // ==========================================
+    achievements: [
+      {
+        title: {
+          type: String,
+          trim: true,
+        },
+        category: {
+          type: String,
+          enum: [
+            "academic",
+            "sports",
+            "cultural",
+            "technical",
+            "competition",
+            "olympiad",
+            "volunteering",
+            "leadership",
+            "arts",
+            "other",
+            "",
+          ],
+          default: "",
+        },
+        level: {
+          type: String,
+          enum: [
+            "school",
+            "college",
+            "university",
+            "district",
+            "divisional",
+            "national",
+            "international",
+            "",
+          ],
+          default: "",
+        },
+        organizer: {
+          type: String,
+          trim: true,
+        },
+        position: {
+          type: String,
+          trim: true, // e.g., "1st Place", "Runner-up", "Winner", "Finalist", "Participant"
+        },
+        date: {
+          type: String,
+        },
+        location: {
+          type: String,
+          trim: true,
+        },
+        projectOrCompetitionName: {
+          type: String,
+          trim: true, // Name of the specific project / contest
+        },
+      },
+    ],
+
+    // ==========================================
     // 8. CAREER CLUB SPECIFIC (Updated)
     // ==========================================
     careerClubInfo: {
@@ -246,6 +308,34 @@ const UserSchema = new mongoose.Schema(
       roadmapPlanning: String,
       careerProspectsOfDept: String,
     },
+    // ==========================================
+    // 8.1 ACC CAREER CLUB Achievements
+    // ==========================================
+
+    accCareerClubAchievements: [
+      {
+        organizer: {
+          // e.g., "ACC Career Club"
+          type: String,
+          trim: true,
+        },
+        position: {
+          // "Champion", "1st Runner-up", "Finalist", "Volunteer"
+          type: String,
+          trim: true,
+        },
+        date: {
+          // "2024-08-15" or "August 2024"
+          type: String,
+        },
+        eventName: {
+          // e.g., "Talent Hunt 2024", "Career Fair 2024"
+          type: String,
+          trim: true,
+        },
+        certificatteId: { type: String, trim: true },
+      },
+    ],
 
     // ==========================================
     // 8.1 ALUMNI INFORMATION (Only for alumni)
