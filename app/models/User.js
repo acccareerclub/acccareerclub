@@ -333,7 +333,11 @@ const UserSchema = new mongoose.Schema(
           type: String,
           trim: true,
         },
-        certificatteId: { type: String, trim: true },
+        certificate: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Certificate",
+          default: null,
+        },
       },
     ],
 

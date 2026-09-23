@@ -25,6 +25,7 @@ import {
   FaEye,
   FaUserPlus,
   FaUserCheck,
+  FaTrophy,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import DashboardMenu from "@/app/components/layout/DashboardMenu";
@@ -32,6 +33,7 @@ import Image from "next/image";
 import { Editor } from "@tinymce/tinymce-react";
 import PreRegistrationModal from "./PreRegistrationModal";
 import AttendanceModal from "./AttendanceModal";
+import AchieversModal from "./AchieversModal";
 
 const EVENT_TYPES = [
   "workshop",
@@ -79,6 +81,7 @@ const EventsClient = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPreRegModal, setShowPreRegModal] = useState(false);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
+  const [showAchieversModal, setShowAchieversModal] = useState(false);
 
   const [formData, setFormData] = useState({
     eventTitle: "",
@@ -569,6 +572,18 @@ const EventsClient = () => {
                     title="Take Attendance"
                   >
                     <FaUserCheck />
+                  </button>
+
+                  {/* Achievers */}
+                  <button
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      setShowAchieversModal(true);
+                    }}
+                    className="p-2 text-[#D3A16D] hover:bg-[#D3A16D]/10 rounded-lg transition-colors"
+                    title="Set Achievers"
+                  >
+                    <FaTrophy />
                   </button>
 
                   {/* Feedback */}
@@ -1272,6 +1287,13 @@ const EventsClient = () => {
         <AttendanceModal
           event={selectedEvent}
           onClose={() => setShowAttendanceModal(false)}
+          onSaved={() => fetchEvents(1, false)}
+        />
+      )}
+      {showAchieversModal && selectedEvent && (
+        <AchieversModal
+          event={selectedEvent}
+          onClose={() => setShowAchieversModal(false)}
           onSaved={() => fetchEvents(1, false)}
         />
       )}

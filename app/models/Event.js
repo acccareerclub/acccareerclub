@@ -167,9 +167,16 @@ const EventSchema = new mongoose.Schema(
     ],
     achievers: [
       {
-        userId: { type: [mongoose.Schema.Types.ObjectId], ref: "User" },
-        name: {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          default: null, // null for external achievers
+        },
+        // ✅ NEW: rank/position label
+        position: {
           type: String,
+          trim: true,
+          default: "", // "1st", "2nd", "3rd", "Special Mention", etc.
         },
         name: {
           type: String,
@@ -178,6 +185,11 @@ const EventSchema = new mongoose.Schema(
         email: {
           type: String,
           trim: true,
+        },
+        institution: {
+          type: String,
+          trim: true,
+          default: "",
         },
         identificationNo: {
           type: String,

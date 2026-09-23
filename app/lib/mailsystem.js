@@ -1344,3 +1344,218 @@ export const sendFeedbackRequestEmail = async ({
     html,
   });
 };
+
+// ==========================================
+// Send Certificate Email
+// ==========================================
+export const sendCertificateEmail = async ({
+  recipientName,
+  recipientEmail,
+  recipientUserId,
+  isClubMember,
+  certificateId,
+  certificateTitle,
+  certificateType,
+  eventName,
+  eventDate,
+  achievementTitle,
+  achievementPosition,
+  issuedByName,
+  issuedByDesignation,
+}) => {
+  const baseUrl = process.env.NEXTAUTH_URL || "https://ccacc.vercel.app";
+
+  // Different URL structure for members vs external
+  const certificateUrl = isClubMember
+    ? `${baseUrl}/certificates/${recipientUserId}/${certificateId}`
+    : `${baseUrl}/certificates/${certificateId}`;
+
+  const verifyUrl = `${baseUrl}/verify-certificate/${certificateId}`;
+
+  const subject = `🎓 Your Certificate is Ready — ${certificateTitle}`;
+
+  // Format date
+  const formattedDate = eventDate
+    ? new Date(eventDate).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "";
+
+  // Nice type label
+  const typeLabel = (certificateType || "certificate")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  // Achievement chip
+  const achievementText =
+    achievementTitle ||
+    (achievementPosition
+      ? achievementPosition.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+      : "");
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Your Certificate</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: #f0f0f0;
+          -webkit-text-size-adjust: 100%;
+        }
+        @media only screen and (max-width: 600px) {
+          .container { border-radius: 0 !important; margin: 0 8px !important; }
+          .header { padding: 24px 16px !important; }
+          .header h1 { font-size: 20px !important; }
+          .content { padding: 20px 16px 24px !important; }
+          .btn { display: block !important; padding: 13px 20px !important; font-size: 15px !important; }
+        }
+      </style>
+    </head>
+    <body style="margin:0;padding:0;background-color:#f0f0f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f0f0;padding:16px 8px;">
+        <tr>
+          <td align="center">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+              
+              <!-- Header -->
+              <tr>
+                <td style="background:linear-gradient(135deg, #3D444C, #994D35);padding:36px 24px;text-align:center;">
+                  <div style="font-size:48px;line-height:1;margin-bottom:10px;">🎓</div>
+                  <h1 style="color:#E7E3D8;margin:0;font-size:24px;font-weight:700;letter-spacing:0.5px;">
+                    Your Certificate is Ready
+                  </h1>
+                  <p style="color:#D3A16D;margin:8px 0 0 0;font-size:13px;font-weight:400;">
+                    ACC Career Club • Adamjee Cantonment College
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style="padding:30px 24px 32px;">
+                  <p style="color:#3D444C;font-size:18px;font-weight:700;margin:0 0 14px 0;">
+                    Dear ${recipientName},
+                  </p>
+
+                  <p style="color:#4B5563;font-size:15px;line-height:1.8;margin:0 0 16px 0;">
+                    Congratulations! Your <strong style="color:#994D35;">${typeLabel}</strong> certificate from ACC Career Club is now ready for you.
+                  </p>
+
+                  <p style="color:#4B5563;font-size:15px;line-height:1.8;margin:0 0 24px 0;">
+                    You can view, download, and print your certificate anytime using the link below.
+                  </p>
+
+                  <!-- Certificate Card -->
+                  <div style="background:linear-gradient(135deg, #F9FAFB, #E7E3D8);border-left:4px solid #D3A16D;border-radius:12px;padding:22px 20px;margin:0 0 24px 0;">
+                    <p style="color:#6B7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin:0 0 10px 0;">
+                      Certificate Details
+                    </p>
+                    <p style="color:#3D444C;font-size:18px;font-weight:800;margin:0 0 12px 0;line-height:1.3;">
+                      ${certificateTitle}
+                    </p>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;">
+                      <tr>
+                        <td style="padding:4px 0;color:#6B7280;width:40%;">Certificate ID</td>
+                        <td style="padding:4px 0;color:#3D444C;font-family:'Courier New',monospace;font-weight:600;">${certificateId}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding:4px 0;color:#6B7280;">Type</td>
+                        <td style="padding:4px 0;color:#3D444C;font-weight:500;">${typeLabel}</td>
+                      </tr>
+                      ${
+                        achievementText
+                          ? `
+                      <tr>
+                        <td style="padding:4px 0;color:#6B7280;">Achievement</td>
+                        <td style="padding:4px 0;color:#994D35;font-weight:600;">${achievementText}</td>
+                      </tr>`
+                          : ""
+                      }
+                      ${
+                        eventName
+                          ? `
+                      <tr>
+                        <td style="padding:4px 0;color:#6B7280;">Event</td>
+                        <td style="padding:4px 0;color:#3D444C;font-weight:500;">${eventName}</td>
+                      </tr>`
+                          : ""
+                      }
+                      ${
+                        formattedDate
+                          ? `
+                      <tr>
+                        <td style="padding:4px 0;color:#6B7280;">Event Date</td>
+                        <td style="padding:4px 0;color:#3D444C;font-weight:500;">${formattedDate}</td>
+                      </tr>`
+                          : ""
+                      }
+                    </table>
+                  </div>
+
+                  <!-- CTA Button -->
+                  <div style="text-align:center;margin:28px 0;">
+                    <a href="${certificateUrl}" 
+                       style="display:inline-block;background:#994D35;color:#ffffff;padding:14px 40px;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(153,77,53,0.3);">
+                      View Certificate →
+                    </a>
+                  </div>
+
+                  <!-- Verify note -->
+                  <div style="background:#F0FDF4;border-left:4px solid #10B981;border-radius:8px;padding:14px 18px;margin:24px 0;">
+                    <p style="margin:0;color:#065F46;font-size:13px;line-height:1.6;">
+                      <strong>🔒 Verification:</strong> Anyone can verify the authenticity of this certificate at
+                      <a href="${verifyUrl}" style="color:#065F46;text-decoration:underline;font-weight:500;">${verifyUrl}</a>
+                    </p>
+                  </div>
+
+                  <p style="color:#4B5563;font-size:14px;line-height:1.8;margin:24px 0 8px 0;">
+                    If you have any questions or need assistance, feel free to reach out to the club administration.
+                  </p>
+
+                  <p style="color:#4B5563;font-size:14px;line-height:1.8;margin:0 0 8px 0;">
+                    Congratulations once again — this achievement is well deserved! 🌟
+                  </p>
+
+                  <p style="color:#3D444C;font-size:14px;font-weight:600;margin:16px 0 0 0;">
+                    — ACC Career Club Team
+                  </p>
+                  ${
+                    issuedByName
+                      ? `<p style="color:#6B7280;font-size:12px;margin:4px 0 0 0;">Issued by ${issuedByName}${
+                          issuedByDesignation ? ` (${issuedByDesignation})` : ""
+                        }</p>`
+                      : ""
+                  }
+
+                  <!-- Footer -->
+                  <div style="text-align:center;padding:24px 0 0 0;border-top:1px solid #E5E7EB;margin-top:28px;">
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      This is an automated message from ACC Career Club.
+                    </p>
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      © ${new Date().getFullYear()} ACC Career Club - Adamjee Cantonment College
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    to: recipientEmail,
+    subject,
+    html,
+  });
+};

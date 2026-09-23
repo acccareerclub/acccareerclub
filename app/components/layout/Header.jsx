@@ -18,6 +18,7 @@ import {
   FaChevronUp,
 } from "react-icons/fa";
 import { IoMdArrowDropdown } from "react-icons/io";
+import { RiCertificate2Fill } from "react-icons/ri";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -295,6 +296,18 @@ const Header = () => {
                     </span>
                     <FaArrowRight className="text-[#994D35] text-xs ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>
+                  
+                  <Link
+                    href={`/certificates/${user?.id}`}
+                    className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-[#E7E3D8] transition-all duration-200 group"
+                    onClick={() => setIsDropdownOpen(false)}
+                  >
+                    <RiCertificate2Fill className="text-[#994D35] text-sm" />
+                    <span className="text-sm text-[#3D444C] group-hover:text-[#994D35] transition-colors">
+                      My Certificates
+                    </span>
+                    <FaArrowRight className="text-[#994D35] text-xs ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
 
                   <Link
                     href={`/settings/${user?.id}`}
@@ -537,6 +550,13 @@ const Header = () => {
                     onClick={closeMenu}
                   >
                     Profile
+                  </Link>
+                  <Link
+                    href={`/certificates/${user?.id}`}
+                    className="block px-3 py-1 text-sm text-[#3D444C] hover:bg-[#E7E3D8] rounded-lg transition-colors"
+                    onClick={closeMenu}
+                  >
+                    My Certificates
                   </Link>
                   <Link
                     href={`/settings/${user?.id}`}

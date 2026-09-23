@@ -3,59 +3,46 @@ import mongoose from "mongoose";
 
 const CertificateSchema = new mongoose.Schema(
   {
-    // ==========================================
-    // 1. CERTIFICATE IDENTIFICATION
-    // Format: ACC-YYYYMMDD-XXXX (date-based, human readable)
-    // ==========================================
     certificateId: {
       type: String,
       required: [true, "Certificate ID is required"],
       unique: true,
       trim: true,
-      uppercase: true, // e.g., "ACC-20260922-0042"
+      uppercase: true,
     },
-
-    // ==========================================
-    // 2. CERTIFICATE TYPE & PURPOSE
-    // ==========================================
     certificateType: {
       type: String,
       required: true,
       enum: [
-        "participation",   // Just participated
-        "achievement",     // Won something (1st, 2nd, etc.)
-        "completion",      // Finished a course/training
-        "appreciation",    // Volunteered, helped
-        "recognition",     // Outstanding contribution
-        "membership",      // Standard club membership
-        "alumni",          // Graduated / alumni status
-        "organizer",       // Organized an event
-        "speaker",         // Was a speaker
-        "judge",           // Was a judge
-        "mentor",          // Mentored others
-        "excellence",      // Excellence award
-        "custom",          // Fully custom (no event, no session)
-        "special",         // Special/custom reason
+        "participation",
+        "achievement",
+        "completion",
+        "appreciation",
+        "recognition",
+        "membership",
+        "alumni",
+        "organizer",
+        "speaker",
+        "judge",
+        "mentor",
+        "excellence",
+        "custom",
+        "special",
       ],
       default: "participation",
     },
-
-    // ==========================================
-    // 3. LINKED EVENT (ALL OPTIONAL)
-    // If eventName is empty, this is a standalone / custom certificate.
-    // ==========================================
     event: {
       eventId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Event", // Links to Event model — optional
+        ref: "Event",
       },
       eventName: {
-        type: String, // e.g., "Talent Hunt 2024"
+        type: String,
         trim: true,
-        default: "", // Empty = no event
+        default: "",
       },
       eventType: {
-        type: String, // workshop, competition, etc.
+        type: String,
         trim: true,
         default: "",
       },
@@ -68,22 +55,15 @@ const CertificateSchema = new mongoose.Schema(
         default: "",
       },
     },
-
-    // ==========================================
-    // 4. RECIPIENT INFO
-    // Supports both internal (linked to User) and external recipients.
-    // ==========================================
     recipient: {
-      // Internal recipient (from User collection) — optional
       userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        default: null, // null = external recipient
+        default: null,
       },
-      // Indicates whether the recipient is a member of the club or external
       isClubMember: {
         type: Boolean,
-        default: true, // false = external (guest, judge, sponsor, etc.)
+        default: true,
       },
       fullName: {
         type: String,
@@ -111,42 +91,36 @@ const CertificateSchema = new mongoose.Schema(
         trim: true,
         default: "",
       },
-      // Snapshot of role at time of issue
       roleAtIssue: {
         type: String,
         trim: true,
         default: "",
       },
-      // For external recipients: their organization / affiliation
       externalOrganization: {
         type: String,
         trim: true,
-        default: "", // e.g., "BRAC University", "Google"
+        default: "",
       },
       externalId: {
         type: String,
         trim: true,
-        default: "", // e.g., "Student Id", "Nid"
+        default: "",
       },
     },
-
-    // ==========================================
-    // 5. CERTIFICATE CONTENT
-    // ==========================================
     title: {
       type: String,
       required: true,
-      trim: true, // e.g., "Certificate of Participation"
+      trim: true,
     },
     description: {
       type: String,
-      trim: true, // Long-form paragraph for the certificate body
+      trim: true,
       default: "",
     },
     achievementTitle: {
       type: String,
       trim: true,
-      default: "", // e.g., "1st Place", "Champion", "Best Volunteer"
+      default: "",
     },
     achievementPosition: {
       type: String,
@@ -164,10 +138,6 @@ const CertificateSchema = new mongoose.Schema(
       ],
       default: "",
     },
-
-    // ==========================================
-    // 6. ISSUING AUTHORITY
-    // ==========================================
     issuedBy: {
       userId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -179,86 +149,81 @@ const CertificateSchema = new mongoose.Schema(
         required: true,
       },
       role: {
-        type: String, // prefect, itsecretary, modarator, etc.
+        type: String,
         default: "",
       },
       designation: {
-        type: String, // "President", "IT Secretary", etc.
+        type: String,
         default: "",
       },
     },
-
-    // ==========================================
-    // 7. SIGNATORY SETUP
-    // Controls whether the certificate needs signatures.
-    // - systemGenerated: no signatures required (blank area)
-    // - customSignatories: array of signers (Principal, Moderator, etc.)
-    // ==========================================
     signatureType: {
       type: String,
       enum: [
-        "system_generated", // "System generated — no signature required"
-        "authorized_only",  // Only issuing authority signs
-        "custom",           // Manual signatories array
+        "system_generated",
+        "moderator_signed",
+        "moderator_and_principal_signed",
       ],
       default: "system_generated",
     },
-    // Only used when signatureType === "custom"
     signatories: [
       {
         name: { type: String, required: true },
         designation: { type: String, required: true },
-        signatureUrl: { type: String, default: "" }, // Cloudinary URL
-        // Optional: order of signature appearance on certificate
+        signatureUrl: { type: String, default: "" },
         order: { type: Number, default: 0 },
       },
     ],
-
-    // ==========================================
-    // 8. BACKGROUND / TEMPLATE
-    // ==========================================
     background: {
       publicId: { type: String, default: "" },
-      url: { type: String, default: "" }, // Cloudinary URL of bg image
+      url: {
+        type: String,
+        default:
+          "https://res.cloudinary.com/ffuatrrt/image/upload/v1790161104/certificate_back_1_sxzqf8.jpg",
+      },
     },
     templateUsed: {
       type: String,
       default: "default",
-      trim: true, // Which template (e.g., "modern", "classic", "alumni")
+      trim: true,
     },
-    clubLogoUrl: {
-      type: String,
-      default:
-        "https://res.cloudinary.com/ffuatrrt/image/upload/v1784889142/CareerClubOpengraph_znaeri.png",
-    },
-    // ==========================================
-    // 9. DELIVERY & TRACKING
-    // ==========================================
     emailSent: {
       type: Boolean,
       default: false,
     },
-   
+    emailSentAt: {
+      type: Date,
+      default: null,
+    },
+    // NEW: Batch tracking for bulk generation
+    batchId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    // NEW: Generation metadata
+    generatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    generationMethod: {
+      type: String,
+      enum: ["individual", "selective", "bulk", "external"],
+      default: "individual",
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-// ==========================================
-// INDEXES
-// ==========================================
 CertificateSchema.index({ certificateId: 1 });
-CertificateSchema.index({ verificationCode: 1 });
 CertificateSchema.index({ "recipient.userId": 1 });
 CertificateSchema.index({ "recipient.studentId": 1 });
 CertificateSchema.index({ certificateType: 1 });
 CertificateSchema.index({ "event.eventId": 1 });
-CertificateSchema.index({ issueDate: -1 });
+CertificateSchema.index({ batchId: 1 });
 
-// ==========================================
-// MODEL EXPORT
-// ==========================================
 const Certificate =
   mongoose.models.Certificate ||
   mongoose.model("Certificate", CertificateSchema);

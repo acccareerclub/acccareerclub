@@ -17,6 +17,7 @@ import {
 } from 'react-icons/fa';
 import { FaUsersViewfinder } from "react-icons/fa6";
 import { MdOutlineEmojiEvents } from "react-icons/md";
+import { GrCertificate } from "react-icons/gr";
 
 const DashboardMenu = () => {
   const pathname = usePathname();
@@ -54,6 +55,12 @@ const DashboardMenu = () => {
       label: 'Events',
       icon: MdOutlineEmojiEvents,
       href: '/dashboard/events',
+    },
+    {
+      id: 'certificates',
+      label: 'Certificates',
+      icon: GrCertificate,
+      href: '/dashboard/certificates',
     },
     {
       id: 'jobs',

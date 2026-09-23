@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Saira } from "next/font/google";
+import { Geist, Geist_Mono, Saira, Playfair_Display, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "./components/layout/Header";
 import ToastProvider from "./components/ToastProvider";
@@ -21,6 +21,19 @@ const saira = Saira({
   weight: ["400", "500", "600", "700"],
 })
 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "900"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-cormorant",
+  display: "swap",
+});
 export const metadata = {
   manifest: "/manifest.json",
   title: "ACC Career Club",
@@ -32,7 +45,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${saira.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${saira.variable} ${playfair.variable} ${cormorant.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
