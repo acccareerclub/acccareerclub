@@ -111,6 +111,15 @@ const Header = () => {
     }
   };
 
+  // Roles that can access the dashboard
+  const DASHBOARD_ROLES = [
+    "itsecretary",
+    "modarator",
+    "prefect",
+    "assistant_prefect",
+  ];
+  const canAccessDashboard = user?.role && DASHBOARD_ROLES.includes(user.role);
+
   return (
     <header className="w-full px-4 sm:px-6 py-4 bg-[#E7E3D8] shadow-md relative z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -302,7 +311,7 @@ const Header = () => {
                     </span>
                     <FaArrowRight className="text-[#994D35] text-xs ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>
-                  
+
                   <Link
                     href={`/certificates/${user?.id}`}
                     className="flex items-center space-x-3 px-3 py-2.5 rounded-lg hover:bg-[#E7E3D8] transition-all duration-200 group"
@@ -326,8 +335,8 @@ const Header = () => {
                     </span>
                     <FaArrowRight className="text-[#994D35] text-xs ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                   </Link>
-                  {/* For IT Secretary */}
-                  {user?.role === "itsecretary" && (
+                  {/* Dashboard — visible to all admin roles */}
+                  {canAccessDashboard && (
                     <>
                       <div className="border-t border-gray-200 my-2"></div>
                       <Link
@@ -578,8 +587,8 @@ const Header = () => {
                   >
                     Settings
                   </Link>
-                  {/* Mobile Menu For It Secretary */}
-                  {user?.role === "itsecretary" && (
+                  {/* Mobile Menu — Dashboard for all admin roles */}
+                  {canAccessDashboard && (
                     <>
                       <div className="border-t border-gray-200 my-2"></div>
                       <Link

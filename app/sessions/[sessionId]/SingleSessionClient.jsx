@@ -136,62 +136,78 @@ const SingleSessionClient = () => {
           <FaArrowLeft className="text-sm" /> Back to Sessions
         </Link>
 
-        {/* ============== HERO BANNER ============== */}
-        <div className="relative w-full h-56 sm:h-72 lg:h-80 rounded-2xl overflow-hidden shadow-xl mb-8">
-          <Image
-            src={banner}
-            alt={session.sessionTitle}
-            fill
-            className="object-cover"
-            sizes="(max-width: 1024px) 100vw, 1024px"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#3D444C]/120 via-[#3D444C]/90 to-transparent" />
+        {/* ============== HERO — split layout: image on top, info panel below ============== */}
+        <div className="mb-8 rounded-2xl overflow-hidden shadow-xl border border-[#3D444C]/10 bg-white">
+          {/* ---------- Thumbnail (image only, no text overlay) ---------- */}
+          <div className="relative w-full h-56 sm:h-72 lg:h-80 bg-[#3D444C]">
+            <Image
+              src={banner}
+              alt={session.sessionTitle}
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 1024px"
+              priority
+            />
 
-          {/* Top badges */}
-          <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-            <span className="px-3 py-1.5 bg-[#3D444C]/85 text-[#E7E3D8] text-xs sm:text-sm rounded-full font-semibold uppercase tracking-wide backdrop-blur-sm">
-              {session.sessionType}
-            </span>
-            {session.isFeatured && (
-              <span className="flex items-center gap-1 px-3 py-1.5 bg-[#D3A16D] text-[#3D444C] text-xs sm:text-sm rounded-full font-bold backdrop-blur-sm">
-                <FaStar className="text-xs" /> Featured
+            {/* Top-left badges — floating over image */}
+            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+              <span className="px-3 py-1.5 bg-[#3D444C]/85 text-[#E7E3D8] text-xs sm:text-sm rounded-full font-semibold uppercase tracking-wide backdrop-blur-sm">
+                {session.sessionType}
               </span>
-            )}
-          </div>
-
-          {/* Status */}
-          <span
-            className={`absolute top-4 right-4 px-3 py-1.5 text-xs sm:text-sm rounded-full font-bold shadow-md ${statusConfig.bg} ${statusConfig.text}`}
-          >
-            {statusConfig.label}
-          </span>
-
-          {/* Bottom: title inside banner */}
-          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight drop-shadow-md">
-              {session.sessionTitle}
-            </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm text-white/90">
-              <span className="flex items-center gap-1.5">
-                <FaCalendar className="text-[#D3A16D]" />
-                {format(new Date(session.sessionDate), "PPP")}
-              </span>
-              {session.sessionDay && (
-                <span className="flex items-center gap-1.5">
-                  <FaClock className="text-[#D3A16D]" />
-                  {session.sessionDay}
+              {session.isFeatured && (
+                <span className="flex items-center gap-1 px-3 py-1.5 bg-[#D3A16D] text-[#3D444C] text-xs sm:text-sm rounded-full font-bold backdrop-blur-sm">
+                  <FaStar className="text-xs" /> Featured
                 </span>
               )}
-              <span className="flex items-center gap-1.5">
+              {/* Online pill (replaces a corner badge when session is online) */}
+              {session.meetingType === "online" && (
+                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600/90 text-white text-xs sm:text-sm rounded-full font-semibold backdrop-blur-sm">
+                  <FaVideo className="text-xs" /> Online
+                </span>
+              )}
+            </div>
+
+            {/* Top-right status pill */}
+            <span
+              className={`absolute top-4 right-4 px-3 py-1.5 text-xs sm:text-sm rounded-full font-bold shadow-md ${statusConfig.bg} ${statusConfig.text}`}
+            >
+              {statusConfig.label}
+            </span>
+          </div>
+
+          {/* ---------- Info panel (all text lives here) ---------- */}
+          <div className="p-5 sm:p-8 bg-white">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#3D444C] leading-tight">
+              {session.sessionTitle}
+            </h1>
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-[#3D444C]/70">
+              {session.sessionDate && (
+                <span className="flex items-center gap-2">
+                  <FaCalendar className="text-[#D3A16D]" />
+                  <span className="font-medium">
+                    {format(new Date(session.sessionDate), "PPP")}
+                  </span>
+                </span>
+              )}
+              {session.sessionDay && (
+                <span className="flex items-center gap-2">
+                  <FaClock className="text-[#D3A16D]" />
+                  <span className="font-medium">{session.sessionDay}</span>
+                </span>
+              )}
+              <span className="flex items-center gap-2">
                 {session.meetingType === "online" ? (
                   <>
-                    <FaVideo className="text-[#D3A16D]" /> Online
+                    <FaVideo className="text-[#D3A16D]" />
+                    <span className="font-medium">Online</span>
                   </>
                 ) : (
                   <>
                     <FaMapMarkerAlt className="text-[#D3A16D]" />
-                    {session.location || "On-site"}
+                    <span className="font-medium">
+                      {session.location || "On-site"}
+                    </span>
                   </>
                 )}
               </span>

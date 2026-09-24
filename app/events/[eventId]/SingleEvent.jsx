@@ -152,9 +152,7 @@ const SingleEvent = ({ eventId }) => {
             : "Email verified! You can now leave feedback.",
         );
       } else {
-        toast.error(
-          "This email is not in the attendee list for this event.",
-        );
+        toast.error("This email is not in the attendee list for this event.");
       }
     } catch {
       toast.error("Failed to verify email");
@@ -170,10 +168,10 @@ const SingleEvent = ({ eventId }) => {
     if (!user) return toast.error("Please log in first.");
     setSubmittingPre(true);
     try {
-      const res = await fetch(
-        `/api/users/events/${eventId}/pre-register`,
-        { method: "POST", credentials: "include" },
-      );
+      const res = await fetch(`/api/users/events/${eventId}/pre-register`, {
+        method: "POST",
+        credentials: "include",
+      });
       const data = await res.json();
       if (data.success) {
         toast.success(data.message);
@@ -197,14 +195,11 @@ const SingleEvent = ({ eventId }) => {
 
     setSubmittingPre(true);
     try {
-      const res = await fetch(
-        `/api/users/events/${eventId}/pre-register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(extForm),
-        },
-      );
+      const res = await fetch(`/api/users/events/${eventId}/pre-register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(extForm),
+      });
       const data = await res.json();
       if (data.success) {
         toast.success(
@@ -281,56 +276,64 @@ const SingleEvent = ({ eventId }) => {
           <FaArrowLeft className="text-sm" /> Back to Events
         </Link>
 
-        {/* HERO */}
-        <div className="relative w-full h-56 sm:h-72 lg:h-80 rounded-2xl overflow-hidden shadow-xl mb-8">
-          <Image
-            src={banner}
-            alt={event.eventTitle}
-            fill
-            className="object-cover"
-            sizes="(max-width: 1024px) 100vw, 1024px"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#3D444C]/95 via-[#3D444C]/70 to-transparent" />
+        {/* HERO — split layout: image on top, info card below */}
+        <div className="mb-8 rounded-2xl overflow-hidden shadow-xl border border-[#3D444C]/10 bg-white">
+          {/* ---------- Thumbnail (image only, no text overlay) ---------- */}
+          <div className="relative w-full h-56 sm:h-72 lg:h-80 bg-[#3D444C]">
+            <Image
+              src={banner}
+              alt={event.eventTitle}
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 1024px"
+              priority
+            />
 
-          <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-            <span className="px-3 py-1.5 bg-[#3D444C]/85 text-[#E7E3D8] text-xs sm:text-sm rounded-full font-semibold uppercase tracking-wide backdrop-blur-sm">
-              {event.eventType}
-            </span>
-            {event.isFeatured && (
-              <span className="flex items-center gap-1 px-3 py-1.5 bg-[#D3A16D] text-[#3D444C] text-xs sm:text-sm rounded-full font-bold backdrop-blur-sm">
-                <FaStar className="text-xs" /> Featured
+            {/* Top-left badges — floating over image (small, unobtrusive) */}
+            <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+              <span className="px-3 py-1.5 bg-[#3D444C]/85 text-[#E7E3D8] text-xs sm:text-sm rounded-full font-semibold uppercase tracking-wide backdrop-blur-sm">
+                {event.eventType}
               </span>
-            )}
+              {event.isFeatured && (
+                <span className="flex items-center gap-1 px-3 py-1.5 bg-[#D3A16D] text-[#3D444C] text-xs sm:text-sm rounded-full font-bold backdrop-blur-sm">
+                  <FaStar className="text-xs" /> Featured
+                </span>
+              )}
+            </div>
+
+            {/* Top-right status pill */}
+            <span
+              className={`absolute top-4 right-4 px-3 py-1.5 text-xs sm:text-sm rounded-full font-bold shadow-md ${statusConfig.bg} ${statusConfig.text}`}
+            >
+              {statusConfig.label}
+            </span>
           </div>
 
-          <span
-            className={`absolute top-4 right-4 px-3 py-1.5 text-xs sm:text-sm rounded-full font-bold shadow-md ${statusConfig.bg} ${statusConfig.text}`}
-          >
-            {statusConfig.label}
-          </span>
-
-          <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-tight drop-shadow-md">
+          {/* ---------- Info panel (text lives here, not on image) ---------- */}
+          <div className="p-5 sm:p-8 bg-white">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#3D444C] leading-tight">
               {event.eventTitle}
             </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs sm:text-sm text-white/90">
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-[#3D444C]/70">
               {event.eventDate && (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2">
                   <FaCalendar className="text-[#D3A16D]" />
-                  {format(new Date(event.eventDate), "PPP")}
+                  <span className="font-medium">
+                    {format(new Date(event.eventDate), "PPP")}
+                  </span>
                 </span>
               )}
               {event.eventDay && (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2">
                   <FaClock className="text-[#D3A16D]" />
-                  {event.eventDay}
+                  <span className="font-medium">{event.eventDay}</span>
                 </span>
               )}
               {event.location && (
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-2">
                   <FaMapMarkerAlt className="text-[#D3A16D]" />
-                  {event.location}
+                  <span className="font-medium">{event.location}</span>
                 </span>
               )}
             </div>
@@ -352,8 +355,7 @@ const SingleEvent = ({ eventId }) => {
                 className="prose prose-sm sm:prose-base max-w-none text-[#3D444C]/80 leading-relaxed"
                 dangerouslySetInnerHTML={{
                   __html:
-                    event.eventDescription ||
-                    "<p>No description provided.</p>",
+                    event.eventDescription || "<p>No description provided.</p>",
                 }}
               />
             </div>
@@ -677,9 +679,7 @@ const FeedbackSection = ({
                 />
               </button>
             ))}
-            <span className="text-sm text-[#3D444C]/60 ml-2">
-              {rating}/5
-            </span>
+            <span className="text-sm text-[#3D444C]/60 ml-2">{rating}/5</span>
           </div>
 
           <textarea
@@ -759,9 +759,7 @@ const FeedbackSection = ({
                 <div className="text-xs text-green-800">
                   <p>
                     Verified as{" "}
-                    <strong>
-                      {verifiedExternalName || verifiedExternal}
-                    </strong>
+                    <strong>{verifiedExternalName || verifiedExternal}</strong>
                   </p>
                   {verifiedExternalName && (
                     <p className="text-green-700/70 font-mono mt-0.5">
@@ -869,9 +867,7 @@ const PreRegistrationCard = ({
     <div className="bg-white rounded-2xl shadow-sm border border-[#3D444C]/10 p-6 sm:p-8">
       <div className="flex items-center gap-2 mb-4">
         <FaUserPlus className="text-[#D3A16D]" />
-        <h2 className="text-xl font-bold text-[#3D444C]">
-          Pre-Registration
-        </h2>
+        <h2 className="text-xl font-bold text-[#3D444C]">Pre-Registration</h2>
       </div>
 
       {closed && (
@@ -935,7 +931,7 @@ const PreRegistrationCard = ({
             disabled={closed}
             className="w-full px-4 py-2.5 border border-[#3D444C]/20 rounded-lg text-sm focus:outline-none focus:border-[#3D444C]"
           />
-                    <input
+          <input
             type="tel"
             inputMode="numeric"
             maxLength={11}
@@ -995,17 +991,45 @@ const PreRegistrationCard = ({
           <FaLock className="text-[#994D35] mt-0.5" />
           <div>
             <p className="font-semibold text-[#3D444C] text-sm">
-              Club members only
+              Club members only / শুধুমাত্র ক্লাব সদস্যদের জন্য
             </p>
-            <p className="text-xs text-[#3D444C]/60 mt-0.5">
-              External pre-registration is not allowed for this event.
+
+            {/* Bangla */}
+            <p className="text-xs text-[#3D444C]/60 mt-1">
+              এই ইভেন্টে এক্সটার্নাল প্রি-রেজিস্ট্রেশন নেই। ক্লাব সদস্য হলে{" "}
               <Link
                 href="/login"
-                className="text-[#994D35] hover:underline font-semibold ml-1"
+                className="text-[#994D35] hover:underline font-semibold"
+              >
+                লগ ইন
+              </Link>{" "}
+              করুন। নতুন সদস্য হতে{" "}
+              <Link
+                href="/signup"
+                className="text-[#994D35] hover:underline font-semibold"
+              >
+                সাইন আপ
+              </Link>{" "}
+              করুন।
+            </p>
+
+            {/* English */}
+            <p className="text-xs text-[#3D444C]/60 mt-1">
+              No external pre-registration. Club members, please{" "}
+              <Link
+                href="/login"
+                className="text-[#994D35] hover:underline font-semibold"
               >
                 Log in
-              </Link>{" "}
-              if you&apos;re a club member.
+              </Link>
+              . To join, please{" "}
+              <Link
+                href="/signup"
+                className="text-[#994D35] hover:underline font-semibold"
+              >
+                Sign up
+              </Link>
+              .
             </p>
           </div>
         </div>
