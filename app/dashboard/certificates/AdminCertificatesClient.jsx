@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import CreateCertificateModal from "./CreateCertificateModal";
 import EditCertificateModal from "./EditCertificateModal";
 import QRCode from "react-qr-code";
-import { FaPrint, FaTrash, FaEdit, FaEnvelope } from "react-icons/fa";
+import { FaPrint, FaTrash, FaEdit, FaEnvelope, FaEye, FaEyeSlash } from "react-icons/fa";
 
 const PAGE_SIZE = 50;
 
@@ -28,6 +28,7 @@ const AdminCertificatesClient = () => {
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState({ type: "", text: "" });
   const [sendingEmailId, setSendingEmailId] = useState(null);
+  const [publishingIds, setPublishingIds] = useState([]);
 
   // Track the last successful fetch so we can abort races
   const fetchAbortRef = useRef(null);
@@ -379,6 +380,47 @@ const AdminCertificatesClient = () => {
       setSendingEmailId(null);
     }
   };
+
+  // ==========================================
+// TOGGLE PUBLISH (single or bulk)
+// ==========================================
+const togglePublish = async (certs, targetPublished) => {
+  const list = Array.isArray(certs) ? certs : [certs];
+  const ids = list.map((c) => c._id).filter(Boolean);
+  if (ids.length === 0) return;
+
+  // Optimistically mark as in-flight
+  setPublishingIds((prev) => Array.from(new Set([...prev, ...ids])));
+
+  try {
+    const res = await fetch("/api/secure/certificates/publish", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ certificateIds: ids, published: targetPublished }),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      setToast({ type: "success", text: data.message });
+      setCertificates((prev) =>
+        prev.map((c) =>
+          ids.includes(c._id) ? { ...c, published: targetPublished } : c,
+        ),
+      );
+    } else {
+      setToast({
+        type: "error",
+        text: data.message || "Failed to update publish state",
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    setToast({ type: "error", text: "Failed to update publish state" });
+  } finally {
+    setPublishingIds((prev) => prev.filter((id) => !ids.includes(id)));
+  }
+};
 
   // ==========================================
   // PRINT (unchanged)
@@ -736,6 +778,28 @@ const AdminCertificatesClient = () => {
                   Clear
                 </button>
                 <button
+  onClick={() =>
+    togglePublish(
+      certificates.filter((c) => selectedIds.includes(c._id)),
+      true,
+    )
+  }
+  className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded font-medium inline-flex items-center gap-1"
+>
+  Publish Selected
+</button>
+<button
+  onClick={() =>
+    togglePublish(
+      certificates.filter((c) => selectedIds.includes(c._id)),
+      false,
+    )
+  }
+  className="text-xs px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 rounded font-medium"
+>
+  Unpublish Selected
+</button>
+                <button
                   onClick={requestDeleteSelected}
                   className="text-xs px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded font-medium flex items-center gap-1"
                 >
@@ -793,6 +857,8 @@ const AdminCertificatesClient = () => {
                   onEdit={requestEdit}
                   onSendEmail={sendCertificateEmail}
                   sendingEmailId={sendingEmailId}
+                  onTogglePublish={togglePublish}
+  publishingIds={publishingIds}
                 />
               ))}
             </div>
@@ -940,6 +1006,8 @@ const CertificateGroup = ({
   onEdit,
   onSendEmail,
   sendingEmailId,
+  onTogglePublish,
+  publishingIds,
 }) => {
   const getTypeBadge = () => {
     switch (group.type) {
@@ -1060,6 +1128,8 @@ const CertificateGroup = ({
                     onEdit={() => onEdit(cert)}
                     onSendEmail={() => onSendEmail(cert)}
                     isSendingEmail={sendingEmailId === cert.certificateId}
+                    onTogglePublish={() => onTogglePublish(cert, !cert.published)}
+  isPublishing={publishingIds.includes(cert._id)}
                   />
                 ))}
               </tbody>
@@ -1083,6 +1153,8 @@ const CertificateRow = ({
   onEdit,
   onSendEmail,
   isSendingEmail,
+  onTogglePublish,
+  isPublishing,
 }) => {
   const [showPreview, setShowPreview] = useState(false);
   const hasEmail = !!cert.recipient?.email;
@@ -1090,10 +1162,15 @@ const CertificateRow = ({
   return (
     <>
       <tr
-        className={`border-t border-gray-100 hover:bg-gray-50 ${
-          isSelected ? "bg-red-50" : ""
-        }`}
-      >
+  className={`border-t border-gray-100 hover:bg-gray-50 ${
+    isSelected
+      ? "bg-red-50"
+      : !cert.published
+        ? "bg-amber-50/40"
+        : ""
+  }`}
+>
+      
         <td className="p-3">
           <input
             type="checkbox"
@@ -1103,8 +1180,15 @@ const CertificateRow = ({
           />
         </td>
         <td className="p-3 font-mono text-xs text-gray-700">
-          {cert.certificateId}
-        </td>
+  <div className="flex items-center gap-2">
+    <span>{cert.certificateId}</span>
+    {!cert.published && (
+      <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded">
+        Draft
+      </span>
+    )}
+  </div>
+</td>
         <td className="p-3">
           <div className="flex items-center gap-2">
             <span className="font-medium text-[#3D444C]">
@@ -1176,6 +1260,32 @@ const CertificateRow = ({
         </td>
 
         <td className="p-3 text-right whitespace-nowrap">
+          {/* PUBLISH / UNPUBLISH TOGGLE */}
+<button
+  onClick={onTogglePublish}
+  disabled={isPublishing}
+  className={`text-xs px-3 py-1.5 rounded mr-2 inline-flex items-center gap-1 ${
+    cert.published
+      ? "bg-green-100 hover:bg-green-200 text-green-800 border border-green-300"
+      : "bg-[#3D444C] hover:bg-[#2a3037] text-white"
+  } disabled:opacity-60 disabled:cursor-not-allowed`}
+  title={cert.published ? "Unpublish certificate" : "Publish certificate"}
+>
+  {isPublishing ? (
+    <>
+      <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+      …
+    </>
+  ) : cert.published ? (
+    <>
+      <FaEye className="text-[10px]" /> Published
+    </>
+  ) : (
+    <>
+      <FaEyeSlash className="text-[10px]" /> Publish
+    </>
+  )}
+</button>
           <button
             onClick={() => setShowPreview(true)}
             className="text-xs px-3 py-1.5 bg-[#3D444C] text-white rounded hover:bg-[#2a3037] mr-2"

@@ -211,6 +211,10 @@ const CertificateSchema = new mongoose.Schema(
       enum: ["individual", "selective", "bulk", "external"],
       default: "individual",
     },
+    published:{
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

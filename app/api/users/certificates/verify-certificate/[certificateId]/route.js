@@ -61,7 +61,7 @@ export async function GET(request, { params }) {
     // still reach a human for manual verification.
     const contacts = await getVerificationContacts();
 
-    const cert = await Certificate.findOne({ certificateId }).lean();
+    const cert = await Certificate.findOne({ certificateId, published: true, }).lean();
 
     if (!cert) {
       return NextResponse.json({

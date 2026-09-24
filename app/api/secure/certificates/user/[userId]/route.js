@@ -57,7 +57,7 @@ export async function GET(request, { params }) {
     const { searchParams } = new URL(request.url);
     const certificateIdFilter = searchParams.get("certificateId");
 
-    const query = { "recipient.userId": userId };
+    const query = { "recipient.userId": userId, published: true };
     if (certificateIdFilter) {
       query.certificateId = certificateIdFilter;
     }

@@ -55,10 +55,7 @@ export async function POST(request, { params }) {
       try {
         const decoded = getCurrentUser(token);
         if (decoded?.userId) {
-          viewer = await User.findById(
-            decoded.userId,
-            "fullName email",
-          ).lean();
+          viewer = await User.findById(decoded.userId, "fullName email").lean();
         }
       } catch {
         viewer = null;

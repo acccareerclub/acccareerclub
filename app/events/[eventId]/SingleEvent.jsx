@@ -25,6 +25,7 @@ import {
   FaUserPlus,
   FaEnvelope,
   FaCrown,
+  FaInfoCircle,
 } from "react-icons/fa";
 import { FaStar as FaStarFill } from "react-icons/fa";
 
@@ -37,6 +38,8 @@ const SingleEvent = ({ eventId }) => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  console.log(event);
 
   // Feedback
   const [rating, setRating] = useState(5);
@@ -654,8 +657,8 @@ const FeedbackSection = ({
         </p>
       )}
 
-      {/* Member — submit directly */}
-      {user && !event.hasSubmittedFeedback && (
+      {/* Member + attended + not yet submitted — show the form */}
+      {user && event.isAttendee && !event.hasSubmittedFeedback && (
         <form
           onSubmit={onSubmit}
           className="border-t border-[#3D444C]/10 pt-5 mt-4"
@@ -708,9 +711,28 @@ const FeedbackSection = ({
         </form>
       )}
 
+      {/* Member + already submitted */}
       {user && event.hasSubmittedFeedback && (
         <div className="border-t border-[#3D444C]/10 pt-5 mt-4 flex items-center gap-2 text-green-600 font-medium text-sm">
           <FaCheckCircle /> You have already submitted feedback. Thank you!
+        </div>
+      )}
+
+      {/* Member + did NOT attend — info note instead of the form */}
+      {user && !event.isAttendee && !event.hasSubmittedFeedback && (
+        <div className="border-t border-[#3D444C]/10 pt-5 mt-4">
+          <div className="flex items-start gap-3 bg-[#E7E3D8]/50 border border-dashed border-[#3D444C]/20 rounded-xl p-4">
+            <FaInfoCircle className="text-[#994D35] mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold text-[#3D444C] text-sm">
+                Feedback not available
+              </p>
+              <p className="text-xs text-[#3D444C]/70 mt-1">
+                Only members who attended this event can submit feedback. If you
+                attended but weren't marked, please contact an admin.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

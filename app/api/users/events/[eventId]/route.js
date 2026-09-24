@@ -98,6 +98,15 @@ export async function GET(request, { params }) {
         (p) => p.userId && String(p.userId) === String(viewer._id),
       );
     }
+let isAttendee = false;
+if (viewer) {
+  const viewerId = String(viewer._id);
+  isAttendee = (event.eventAttendees || []).some((entry) => {
+    // Handle: raw ObjectId, populated user object, or string
+    const id = entry?._id ? String(entry._id) : String(entry);
+    return id === viewerId;
+  });
+}
 
     let hasSubmittedFeedback = false;
     // Object: { email, name, institution } | null
@@ -234,6 +243,7 @@ export async function GET(request, { params }) {
       isAuthenticated,
       isPreRegisteredMember,
       hasSubmittedFeedback,
+      isAttendee, 
       // Now an object: { email, name, institution } | null
       externalFeedbackIdentity,
     };

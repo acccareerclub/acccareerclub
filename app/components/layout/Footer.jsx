@@ -24,32 +24,8 @@ const Footer = () => {
     {
       name: "Facebook",
       icon: <FaFacebookF />,
-      url: "https://facebook.com",
+      url: "https://www.facebook.com/ACC.CareerClub",
       color: "hover:bg-[#1877f2]",
-    },
-    {
-      name: "Twitter",
-      icon: <FaTwitter />,
-      url: "https://twitter.com",
-      color: "hover:bg-[#1da1f2]",
-    },
-    {
-      name: "LinkedIn",
-      icon: <FaLinkedinIn />,
-      url: "https://linkedin.com",
-      color: "hover:bg-[#0a66c2]",
-    },
-    {
-      name: "Instagram",
-      icon: <FaInstagram />,
-      url: "https://instagram.com",
-      color: "hover:bg-[#e4405f]",
-    },
-    {
-      name: "YouTube",
-      icon: <FaYoutube />,
-      url: "https://youtube.com",
-      color: "hover:bg-[#ff0000]",
     },
   ];
 

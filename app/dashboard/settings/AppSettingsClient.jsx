@@ -6,9 +6,9 @@ import React from "react";
 import {
   FaBriefcase,
   FaUsersSlash ,
-  FaClipboardList,
   FaCog,
   FaArrowRight,
+  FaQrcode 
 } from "react-icons/fa";
 
 const AppSettingsClient = () => {
@@ -31,12 +31,12 @@ const AppSettingsClient = () => {
       link: "/dashboard/settings/alumni",
     },
     {
-      id: "logs",
-      title: "Activity Logs",
-      description: "View and manage application activity logs.",
-      icon: FaClipboardList,
+      id: "qrgenerator",
+      title: "QR Code Generator",
+      description: "Generate QR Code With Link.",
+      icon: FaQrcode ,
       color: "#3D444C",
-      link: "/dashboard/settings/logs",
+      link: "/dashboard/settings/qrgenerator",
     },
     {
       id: "general",

@@ -231,7 +231,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
           </div>
           <button
             onClick={() => setShowExternalForm(true)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-[#994D35] text-white rounded-lg hover:bg-[#3D444C] transition-colors font-medium text-sm"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 border border-[#994D35] text-[#994D35] rounded-lg hover:bg-[#3D444C] transition-colors font-medium text-sm"
           >
             <FaUserPlus /> Add External
           </button>
@@ -508,14 +508,14 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="px-5 py-2.5 border border-[#E7E3D8]/30 text-[#E7E3D8] rounded-lg hover:bg-white/10 font-medium text-sm"
+              className="px-2 md:px-6 py-2 md:py-2.5 border border-[#E7E3D8]/30 text-[#E7E3D8] rounded-lg hover:bg-white/10 font-medium text-sm"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={submitting}
-              className="px-6 py-2.5 bg-[#D3A16D] text-[#3D444C] rounded-lg hover:bg-[#994D35] hover:text-white font-bold text-sm disabled:opacity-60 flex items-center gap-2"
+              className="px-2 md:px-6 py-2 md:py-2.5 bg-[#D3A16D] text-[#3D444C] rounded-lg hover:bg-[#994D35] hover:text-white font-bold text-sm disabled:opacity-60 flex items-center gap-2"
             >
               {submitting ? (
                 <>
@@ -523,7 +523,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
                 </>
               ) : (
                 <>
-                  <FaSave /> Save Pre-Registration
+                  <FaSave /> Save
                 </>
               )}
             </button>

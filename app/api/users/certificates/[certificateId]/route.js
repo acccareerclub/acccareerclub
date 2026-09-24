@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
     await connectToDatabase();
 
     // Select only public-safe fields. No `issuedBy.userId`, no `recipient.userId`.
-    const cert = await Certificate.findOne({ certificateId }).lean();
+ const cert = await Certificate.findOne({ certificateId, published: true }).lean();
 
     if (!cert) {
       return NextResponse.json(
