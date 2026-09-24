@@ -25,6 +25,7 @@ import {
   FaUserTie,
   FaStar,
   FaUser,
+  FaPrint,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -109,12 +110,28 @@ const UserRow = ({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[#3D444C] truncate">
-            {user.fullName}
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-semibold text-[#3D444C] truncate">
+              {user.fullName}
+            </p>
+            {user.membershipId && (
+              <span className="font-mono text-[10px] bg-[#D3A16D]/20 text-[#994D35] border border-[#D3A16D]/40 px-1.5 py-0.5 rounded font-bold tracking-wider">
+                {user.membershipId}
+              </span>
+            )}
+          </div>
+
           <p className="text-xs sm:text-sm text-gray-500 truncate">
             {user.email}
           </p>
+
+          {user.phone && (
+            <p className="text-xs text-gray-500 truncate flex items-center gap-1">
+              <span className="text-gray-400">📞</span>
+              {user.phone}
+            </p>
+          )}
+
           <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
             <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-600">
               {user.studentId}
@@ -184,9 +201,7 @@ const UserRow = ({
               : "text-green-600 hover:bg-green-50"
           }`}
           title={
-            user.isActive !== false
-              ? "Deactivate Account"
-              : "Activate Account"
+            user.isActive !== false ? "Deactivate Account" : "Activate Account"
           }
         >
           {user.isActive !== false ? (
@@ -264,9 +279,7 @@ const Section = ({
         </div>
       </button>
 
-      {open && (
-        <div className="px-4 sm:px-6 pb-4 space-y-2.5">{children}</div>
-      )}
+      {open && <div className="px-4 sm:px-6 pb-4 space-y-2.5">{children}</div>}
     </div>
   );
 };
@@ -344,7 +357,7 @@ const UsersClient = () => {
     try {
       // Fetch all users (with high limit) to organize by hierarchy client-side
       const url = `/api/secure/users?limit=5000&search=${encodeURIComponent(
-        searchTerm
+        searchTerm,
       )}`;
       const response = await fetch(url, { credentials: "include" });
       const data = await response.json();
@@ -352,7 +365,7 @@ const UsersClient = () => {
       if (data.success) {
         // ✅ Filter out alumni
         const filteredUsers = data.users.filter(
-          (u) => u.role !== "alumni" && u.role !== "Alumni"
+          (u) => u.role !== "alumni" && u.role !== "Alumni",
         );
         setUsers(filteredUsers);
         setTotalUsers(data.pagination.total);
@@ -425,7 +438,7 @@ const UsersClient = () => {
         toast.success(
           toggleAction === "activate"
             ? "Account activated successfully!"
-            : "Account deactivated successfully!"
+            : "Account deactivated successfully!",
         );
         setShowToggleModal(false);
         setToggleUser(null);
@@ -473,13 +486,442 @@ const UsersClient = () => {
     }
   };
 
+  // ==================== PRINT ACTIVE MEMBERS ====================
+  const handlePrintActiveMembers = () => {
+    // Active only, exclude moderators
+    const activeUsers = users.filter((u) => {
+      if (u.isActive === false) return false;
+      if (u.role === "modarator" || u.role === "moderator") return false;
+      return true;
+    });
+
+    if (activeUsers.length === 0) {
+      toast.error("No active members to print");
+      return;
+    }
+
+    const esc = (s) =>
+      String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
+    const roleLabel = (role) => roleLabels[role] || role || "—";
+
+    const alphaSort = (a, b) =>
+      (a.fullName || "").localeCompare(b.fullName || "");
+
+    // ---------- Build hierarchy groups ----------
+    const byRole = (role) => activeUsers.filter((u) => u.role === role);
+    const byBranch = (branch) =>
+      activeUsers.filter(
+        (u) => u.role === "executive_member" && u.executiveBranch === branch,
+      );
+
+    const dynamicPostKeys = dynamicRoles
+      .filter((r) => r.roleKey !== "executive_member")
+      .map((r) => r.roleKey);
+
+    const groups = [];
+
+    // 1) Prefect
+    const prefects = byRole("prefect").sort(alphaSort);
+    if (prefects.length) {
+      groups.push({ key: "prefect", title: "Prefect", members: prefects });
+    }
+
+    // 2) Assistant Prefect
+    const assist = byRole("assistant_prefect").sort(alphaSort);
+    if (assist.length) {
+      groups.push({
+        key: "assistant_prefect",
+        title: "Assistant Prefect",
+        members: assist,
+      });
+    }
+
+    // 3) IT Secretary (with its executives)
+    const itSecHeads = byRole("itsecretary").sort(alphaSort);
+    const itSecExecs = byBranch("itsecretary").sort(alphaSort);
+    if (itSecHeads.length || itSecExecs.length) {
+      groups.push({
+        key: "itsecretary",
+        title: "IT Secretary",
+        members: [...itSecHeads, ...itSecExecs],
+      });
+    }
+
+    // 4) Other dynamic posts
+    for (const key of dynamicPostKeys) {
+      if (key === "itsecretary") continue;
+      const heads = byRole(key).sort(alphaSort);
+      const execs = byBranch(key).sort(alphaSort);
+      if (heads.length || execs.length) {
+        groups.push({
+          key,
+          title: roleLabel(key),
+          members: [...heads, ...execs],
+        });
+      }
+    }
+
+    // 5) Executive members with no branch
+    const execsNoBranch = activeUsers
+      .filter((u) => u.role === "executive_member" && !u.executiveBranch)
+      .sort(alphaSort);
+    if (execsNoBranch.length) {
+      groups.push({
+        key: "exec_no_branch",
+        title: "Executive Members (No Branch)",
+        members: execsNoBranch,
+      });
+    }
+
+    // 6) General members
+    const members = byRole("member").sort(alphaSort);
+    if (members.length) {
+      groups.push({ key: "member", title: "General Members", members });
+    }
+
+    const grandTotal = groups.reduce((sum, g) => sum + g.members.length, 0);
+
+    // ---------- Build ONE table body with section rows ----------
+    let rowCounter = 0;
+    const tbodyHtml = groups
+      .map((group) => {
+        // Section header row (spans all columns)
+        const sectionRow = `
+        <tr class="section-row">
+          <td colspan="7">
+            <div class="section-inner">
+              <span class="section-title">${esc(group.title)}</span>
+              <span class="section-count">${group.members.length}</span>
+            </div>
+          </td>
+        </tr>
+      `;
+
+        // Member rows
+        const memberRows = group.members
+          .map((u) => {
+            rowCounter += 1;
+            return `
+            <tr>
+              <td class="num">${rowCounter}</td>
+              <td>
+                <div class="name">${esc(u.fullName || "")}</div>
+                ${
+                  u.membershipId
+                    ? `<div class="mid">${esc(u.membershipId)}</div>`
+                    : ""
+                }
+              </td>
+              <td class="email">${esc(u.email || "")}</td>
+              <td class="phone">${esc(u.phone || "")}</td>
+              <td class="mono">${esc(u.studentId || "")}</td>
+              <td>${esc(u.department || "")}</td>
+              <td class="role-cell">${esc(roleLabel(u.role))}${
+                u.role === "executive_member" && u.executiveBranch
+                  ? ` <span class="branch-suffix">(${esc(
+                      roleLabel(u.executiveBranch),
+                    )})</span>`
+                  : ""
+              }</td>
+            </tr>
+          `;
+          })
+          .join("");
+
+        return sectionRow + memberRows;
+      })
+      .join("");
+
+    const printDate = new Date().toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Active Members - ACC Career Club</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      Helvetica, Arial, sans-serif;
+    color: #3D444C;
+    font-size: 10pt;
+  }
+
+  .header {
+    text-align: center;
+    padding: 8pt 0 12pt;
+    border-bottom: 3px double #3D444C;
+    margin-bottom: 12pt;
+  }
+  .header .club {
+    font-size: 20pt;
+    font-weight: 800;
+    color: #3D444C;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+  .header .subtitle {
+    font-size: 10pt;
+    color: #994D35;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 2pt 0 8pt;
+    font-weight: 600;
+  }
+  .header .doc-title {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #3D444C;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 4pt 0 0;
+  }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9pt;
+    color: #666;
+    margin-bottom: 14pt;
+    padding: 6pt 10pt;
+    background: #FAF8F3;
+    border: 1px solid #D3A16D;
+    border-radius: 4pt;
+  }
+
+  /* ---------- Single table ---------- */
+  table.list {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  table.list thead th {
+    background: #3D444C;
+    color: #FFFFFF;
+    text-align: left;
+    padding: 7pt 5pt;
+    font-size: 9pt;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid #3D444C;
+  }
+  table.list thead th.num { width: 26pt; text-align: center; }
+  table.list thead th.name { width: 20%; }
+  table.list thead th.email { width: 20%; }
+  table.list thead th.phone { width: 11%; }
+  table.list thead th.sid { width: 10%; }
+  table.list thead th.dept { width: 15%; }
+  table.list thead th.role { width: 14%; }
+
+  table.list tbody td {
+    padding: 5pt 5pt;
+    border: 1px solid #D6D0BE;
+    vertical-align: top;
+    font-size: 9pt;
+    color: #3D444C;
+    word-wrap: break-word;
+  }
+  table.list tbody tr:nth-child(even):not(.section-row) td {
+    background: #FAF8F3;
+  }
+
+  /* ---------- Section row (in-table heading) ---------- */
+  tr.section-row td {
+    background: linear-gradient(90deg, #3D444C, #4a525c) !important;
+    border: 1px solid #3D444C !important;
+    padding: 6pt 8pt !important;
+    color: #E7E3D8;
+  }
+  .section-inner {
+    display: flex;
+    align-items: center;
+    gap: 8pt;
+  }
+  .section-title {
+    font-size: 10.5pt;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #E7E3D8;
+    flex: 1;
+  }
+  .section-count {
+    font-size: 9pt;
+    font-weight: 700;
+    background: #D3A16D;
+    color: #3D444C;
+    padding: 1pt 9pt;
+    border-radius: 20pt;
+    letter-spacing: 0.5px;
+  }
+
+  /* ---------- Cells ---------- */
+  .num { color: #994D35; font-weight: 700; text-align: center; }
+  .name { font-weight: 700; }
+  .mid {
+    display: inline-block;
+    margin-top: 2pt;
+    font-family: 'Courier New', monospace;
+    font-size: 8pt;
+    font-weight: 700;
+    color: #994D35;
+    background: #FEF3C7;
+    border: 1px solid #FCD34D;
+    border-radius: 3pt;
+    padding: 0 4pt;
+    letter-spacing: 0.5px;
+  }
+  .email, .phone { font-size: 9pt; }
+  .mono { font-family: 'Courier New', monospace; font-size: 9pt; }
+  .role-cell { font-size: 9pt; font-weight: 600; }
+  .branch-suffix { color: #994D35; font-weight: 500; font-size: 8.5pt; }
+
+  .footer {
+    margin-top: 16pt;
+    padding-top: 8pt;
+    border-top: 1px solid #3D444C;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8.5pt;
+    color: #666;
+  }
+
+  @media print {
+    body { background: #fff !important; }
+    table.list tbody tr { page-break-inside: avoid; }
+    thead { display: table-header-group; }
+    /* Section rows should never be the last row on a page */
+    tr.section-row { page-break-after: avoid; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="club">ACC CAREER CLUB</h1>
+    <p class="subtitle">Adamjee Cantonment College</p>
+    <h2 class="doc-title">Active Members Register</h2>
+  </div>
+
+  <div class="meta">
+    <div><strong>Total Members:</strong> ${grandTotal}</div>
+    <div><strong>Groups:</strong> ${groups.length}</div>
+    <div><strong>Printed:</strong> ${esc(printDate)}</div>
+  </div>
+
+  <table class="list">
+    <thead>
+      <tr>
+        <th class="num">#</th>
+        <th class="name">Name</th>
+        <th class="email">Email</th>
+        <th class="phone">Phone</th>
+        <th class="sid">Student ID</th>
+        <th class="dept">Department</th>
+        <th class="role">Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tbodyHtml}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <div>ACC Career Club — Member Register</div>
+    <div>Generated by the club management system</div>
+  </div>
+</body>
+</html>`;
+
+    // Hidden iframe — same pattern as the rest of your app
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
+
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      setTimeout(() => {
+        try {
+          document.body.removeChild(iframe);
+        } catch (_) {}
+      }, 500);
+    };
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const printNow = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (err) {
+        console.error("Print error:", err);
+        toast.error("Failed to open print dialog");
+      } finally {
+        const win = iframe.contentWindow;
+        if (win) {
+          const done = () => cleanup();
+          try {
+            win.addEventListener("afterprint", done, { once: true });
+          } catch (_) {}
+          setTimeout(done, 1500);
+        } else {
+          cleanup();
+        }
+      }
+    };
+
+    const waitForReady = () => {
+      const win = iframe.contentWindow;
+      if (win.document.fonts && win.document.fonts.ready) {
+        win.document.fonts.ready.then(() => setTimeout(printNow, 200));
+      } else {
+        setTimeout(printNow, 300);
+      }
+    };
+
+    if (iframe.contentWindow.document.readyState === "complete") {
+      waitForReady();
+    } else {
+      iframe.addEventListener("load", waitForReady, { once: true });
+      setTimeout(waitForReady, 400);
+    }
+  };
+
+  // Alphabetical helper — declared once, used by every group sort
+  function alphaSort(a, b) {
+    return (a.fullName || "").localeCompare(b.fullName || "");
+  }
+
   // ==================== ORGANIZE BY HIERARCHY ====================
   const hierarchy = useMemo(() => {
     // Helper to filter by role
     const byRole = (role) => users.filter((u) => u.role === role);
     const byBranch = (branch) =>
       users.filter(
-        (u) => u.role === "executive_member" && u.executiveBranch === branch
+        (u) => u.role === "executive_member" && u.executiveBranch === branch,
       );
 
     // Get all unique executive branches
@@ -487,8 +929,8 @@ const UsersClient = () => {
       new Set(
         users
           .filter((u) => u.role === "executive_member" && u.executiveBranch)
-          .map((u) => u.executiveBranch)
-      )
+          .map((u) => u.executiveBranch),
+      ),
     );
 
     // Get all dynamic roles (excluding executive_member)
@@ -515,7 +957,7 @@ const UsersClient = () => {
       })),
       // Executive members with no branch
       executivesNoBranch: users.filter(
-        (u) => u.role === "executive_member" && !u.executiveBranch
+        (u) => u.role === "executive_member" && !u.executiveBranch,
       ),
       // General members
       members: byRole("member"),
@@ -529,8 +971,7 @@ const UsersClient = () => {
   };
 
   // Check if a section should show given the filter
-  const shouldShowRole = (role) =>
-    filterRole === "all" || filterRole === role;
+  const shouldShowRole = (role) => filterRole === "all" || filterRole === role;
 
   if (authLoading || loading) {
     return (
@@ -576,7 +1017,7 @@ const UsersClient = () => {
               Manage members organized by hierarchy
             </p>
           </div>
-          <div className="flex items-center gap-2 mt-4 sm:mt-0">
+          <div className="flex items-center gap-2 mt-4 sm:mt-0 flex-wrap">
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-md">
               <FaUsers className="text-[#994D35]" />
               <span className="font-semibold text-[#3D444C]">{totalUsers}</span>
@@ -586,6 +1027,16 @@ const UsersClient = () => {
               </span>
               <span className="text-gray-400 text-sm">pending</span>
             </div>
+
+            <button
+              onClick={handlePrintActiveMembers}
+              className="flex items-center gap-2 bg-[#3D444C] text-white px-4 py-2 rounded-lg hover:bg-[#2a3037] transition-colors"
+              title="Print all active members (excluding moderators)"
+            >
+              <FaPrint />
+              <span className="hidden sm:inline">Print Members</span>
+            </button>
+
             <button
               onClick={() => setShowAddUserModal(true)}
               className="flex items-center gap-2 bg-[#994D35] text-white px-4 py-2 rounded-lg hover:bg-[#D3A16D] transition-colors"
@@ -706,7 +1157,10 @@ const UsersClient = () => {
             }
 
             // If filter is executive_member, only show branches that have execs
-            if (filterRole === "executive_member" && filteredExecs.length === 0) {
+            if (
+              filterRole === "executive_member" &&
+              filteredExecs.length === 0
+            ) {
               return null;
             }
 

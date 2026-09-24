@@ -81,12 +81,13 @@ const UserSchema = new mongoose.Schema(
     },
 
     // ==========================================
-    // 3. ADDITIONAL PERSONAL INFO (Optional)
+    // 3. ADDITIONAL PERSONAL INFO
     // ==========================================
     personalInfo: {
       classOrYear: String,
       dateOfBirth: String,
       bloodGroup: String,
+      religion: String,
       facebookIdLink: String,
       linkedInIdLink: String,
       presentAddress: String,

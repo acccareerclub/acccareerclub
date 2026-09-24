@@ -1023,7 +1023,7 @@ const ProfileClient = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Full Name
                   </label>
                   {isEditing ? (
@@ -1041,7 +1041,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Email
                   </label>
                   <div className="flex items-center gap-2">
@@ -1057,7 +1057,7 @@ const ProfileClient = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Phone
                   </label>
                   {isEditing ? (
@@ -1075,7 +1075,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Student ID
                   </label>
                   <p className="text-[#3D444C] font-medium text-gray-500">
@@ -1086,7 +1086,7 @@ const ProfileClient = () => {
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Department
                   </label>
                   {isEditing ? (
@@ -1110,7 +1110,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Class/Year
                   </label>
                   {isEditing ? (
@@ -1134,7 +1134,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Date of Birth
                   </label>
                   {isEditing ? (
@@ -1158,7 +1158,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Blood Group
                   </label>
                   {isEditing ? (
@@ -1190,6 +1190,36 @@ const ProfileClient = () => {
                     </p>
                   )}
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
+                    Religion
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="religion"
+                      value={formData.personalInfo?.religion || ""}
+                      onChange={(e) =>
+                        handleNestedInputChange(
+                          "personalInfo",
+                          "religion",
+                          e.target.value,
+                        )
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent text-[#3D444C] bg-white"
+                    >
+                      <option value="">Select Religion</option>
+                      <option value="Islam">Islam</option>
+                      <option value="Hinduism">Hinduism</option>
+                      <option value="Christianity">Christianity</option>
+                      <option value="Buddhism">Buddhism</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  ) : (
+                    <p className="text-[#3D444C] font-medium">
+                      {user?.personalInfo?.religion || "Not provided"}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1203,7 +1233,7 @@ const ProfileClient = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Father's Name
                   </label>
                   {isEditing ? (
@@ -1227,7 +1257,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Father's Occupation
                   </label>
                   {isEditing ? (
@@ -1251,7 +1281,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Father's Contact
                   </label>
                   {isEditing ? (
@@ -1275,7 +1305,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Mother's Name
                   </label>
                   {isEditing ? (
@@ -1299,7 +1329,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Mother's Occupation
                   </label>
                   {isEditing ? (
@@ -1323,7 +1353,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Mother's Contact
                   </label>
                   {isEditing ? (
@@ -1390,7 +1420,7 @@ const ProfileClient = () => {
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       University
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1399,7 +1429,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       College
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1408,7 +1438,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Registration Number
                     </label>
                     {isEditing ? (
@@ -1436,7 +1466,7 @@ const ProfileClient = () => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Exam System
                     </label>
                     {isEditing ? (
@@ -1466,7 +1496,7 @@ const ProfileClient = () => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Session
                     </label>
                     {isEditing ? (
@@ -1491,7 +1521,7 @@ const ProfileClient = () => {
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Cumulative CGPA
                     </label>
                     {isEditing ? (
@@ -1721,7 +1751,7 @@ const ProfileClient = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Institution
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1730,7 +1760,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Group
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1739,7 +1769,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Board
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1748,7 +1778,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Roll Number
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1757,7 +1787,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Year
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1766,7 +1796,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Result (GPA)
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1795,7 +1825,7 @@ const ProfileClient = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Institution
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1804,7 +1834,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Group
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1813,7 +1843,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Board
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1822,7 +1852,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Roll Number
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1831,7 +1861,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Year
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -1840,7 +1870,7 @@ const ProfileClient = () => {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
                       Result (GPA)
                     </label>
                     <p className="text-[#3D444C] font-medium">
@@ -2139,7 +2169,7 @@ const ProfileClient = () => {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Reason to Join
                   </label>
                   {isEditing ? (
@@ -2163,7 +2193,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Interested Career Organization/Position
                   </label>
                   {isEditing ? (
@@ -2190,7 +2220,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Required Skills for Career
                   </label>
                   {isEditing ? (
@@ -2217,7 +2247,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Roadmap Planning
                   </label>
                   {isEditing ? (
@@ -2241,7 +2271,7 @@ const ProfileClient = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
                     Career Prospects of Your Department
                   </label>
                   {isEditing ? (
