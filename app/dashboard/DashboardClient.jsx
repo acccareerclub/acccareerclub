@@ -17,6 +17,7 @@ import {
   FaUserCog,
   FaShieldAlt,
   FaLock,
+  FaClipboardList,
 } from "react-icons/fa";
 import Link from "next/link";
 import DashboardMenu from "../components/layout/DashboardMenu";
@@ -134,6 +135,14 @@ const DashboardClient = () => {
       color: "bg-orange-500",
       change: "+3% this week",
     },
+    {
+  title: "Attendance Reports",
+  description: "Event & session attendance insights and student history",
+  icon: FaClipboardList,
+  link: "/dashboard/reports/attendance",
+  color: "from-[#994D35] to-[#D3A16D]",
+  roles: ["prefect", "itsecretary", "modarator", "assistant_prefect"],
+},
   ];
 
   // Quick actions based on role

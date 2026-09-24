@@ -34,6 +34,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
   const [externalForm, setExternalForm] = useState({
     name: "",
     email: "",
+    phone: "",
     institution: "",
     identificationNo: "",
   });
@@ -61,6 +62,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
             preExternal.push({
               name: u.name || "",
               email: u.email || "",
+              phone: u.phone || "",
               institution: u.institution || "", // ✅ include institution
               identificationNo: u.identificationNo || "",
             });
@@ -105,18 +107,24 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
     if (!externalForm.name.trim()) {
       return toast.error("Name is required for external participants");
     }
+    const digitsOnly = externalForm.phone.replace(/\D/g, "");
+    if (digitsOnly && digitsOnly.length > 11) {
+      return toast.error("Phone number cannot exceed 11 digits");
+    }
     setExternalUsers((prev) => [
       ...prev,
       {
         name: externalForm.name.trim(),
         email: externalForm.email.trim(),
-        institution: externalForm.institution.trim(), // ✅ include institution
+        phone: digitsOnly,
+        institution: externalForm.institution.trim(),
         identificationNo: externalForm.identificationNo.trim(),
       },
     ]);
     setExternalForm({
       name: "",
       email: "",
+      phone: "",
       institution: "",
       identificationNo: "",
     });
@@ -138,6 +146,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
             userId: id,
             name: u?.fullName || "",
             email: u?.email || "",
+            phone: u?.phone || "",
             institution: u?.department || "", // internal: use department as institution
             identificationNo: u?.studentId || "",
           };
@@ -146,6 +155,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
         ...externalUsers.map((e) => ({
           name: e.name,
           email: e.email,
+          phone: e.phone || "",
           institution: e.institution, // ✅ include institution
           identificationNo: e.identificationNo,
         })),
@@ -270,8 +280,8 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
         {externalUsers.length > 0 && (
           <div className="bg-white rounded-2xl border border-[#3D444C]/10 p-4 mb-6 shadow-sm">
             <h3 className="text-sm font-bold text-[#3D444C] mb-3 flex items-center gap-2">
-              <FaBuilding className="text-purple-600" /> External Participants
-              ({externalUsers.length})
+              <FaBuilding className="text-purple-600" /> External Participants (
+              {externalUsers.length})
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {externalUsers.map((e, i) => (
@@ -287,6 +297,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
                       {e.name}
                     </p>
                     <p className="text-xs text-[#3D444C]/60 truncate">
+                      {e.phone ? `📞 ${e.phone} • ` : ""}
                       {e.institution ||
                         e.email ||
                         e.identificationNo ||
@@ -365,9 +376,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
                       >
                         <FaCheck
                           className={`text-[10px] ${
-                            wasSelected
-                              ? "text-green-600"
-                              : "text-[#3D444C]"
+                            wasSelected ? "text-green-600" : "text-[#3D444C]"
                           }`}
                         />
                       </div>
@@ -433,6 +442,20 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
                 value={externalForm.email}
                 onChange={(e) =>
                   setExternalForm({ ...externalForm, email: e.target.value })
+                }
+                className="w-full px-4 py-2.5 border border-[#3D444C]/20 rounded-lg focus:outline-none focus:border-[#3D444C]"
+              />
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={11}
+                placeholder="Phone (11 digits max)"
+                value={externalForm.phone}
+                onChange={(e) =>
+                  setExternalForm({
+                    ...externalForm,
+                    phone: e.target.value.replace(/\D/g, "").slice(0, 11),
+                  })
                 }
                 className="w-full px-4 py-2.5 border border-[#3D444C]/20 rounded-lg focus:outline-none focus:border-[#3D444C]"
               />

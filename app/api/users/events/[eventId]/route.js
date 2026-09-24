@@ -117,6 +117,7 @@ export async function GET(request, { params }) {
       if (attendeeRecord) {
         externalFeedbackIdentity = {
           email: (attendeeRecord.email || "").trim().toLowerCase(),
+          phone: (attendeeRecord.phone || "").trim(),
           name: (attendeeRecord.name || "").trim(),
           institution: (attendeeRecord.institution || "").trim(),
         };

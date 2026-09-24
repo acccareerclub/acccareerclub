@@ -3,9 +3,18 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  FaTimes, FaSearch, FaCamera, FaSpinner, FaCheck,
-  FaUserCheck, FaBarcode, FaUsers, FaSave, FaCheckCircle,
+  FaTimes,
+  FaSearch,
+  FaCamera,
+  FaSpinner,
+  FaCheck,
+  FaUserCheck,
+  FaBarcode,
+  FaUsers,
+  FaSave,
+  FaCheckCircle,
   FaHistory,
+  FaPrint,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import Image from "next/image";
@@ -41,7 +50,7 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
         // Pre-select users already marked in this session
         if (session?.sessionAttendees?.length > 0) {
           const attendeeIds = session.sessionAttendees.map((id) =>
-            id.toString()
+            id.toString(),
           );
           setSelectedIds(attendeeIds);
           // ✅ Save the initial attendees for comparison later
@@ -72,7 +81,7 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
     setSelectedIds((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+        : [...prev, userId],
     );
   };
 
@@ -91,8 +100,9 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
   // ---------- Play Beep Sound ----------
   const playBeep = () => {
     try {
-      const audioContext = new (window.AudioContext ||
-        window.webkitAudioContext)();
+      const audioContext = new (
+        window.AudioContext || window.webkitAudioContext
+      )();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       oscillator.connect(gainNode);
@@ -152,7 +162,7 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
           (u) =>
             u.studentId === scanned ||
             u.email?.toLowerCase() === scanned.toLowerCase() ||
-            u.fullName?.toLowerCase() === scanned.toLowerCase()
+            u.fullName?.toLowerCase() === scanned.toLowerCase(),
         );
 
         if (matched) {
@@ -177,7 +187,7 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
         { facingMode: "environment" },
         config,
         onSuccess,
-        () => {}
+        () => {},
       );
     } catch (err) {
       console.error("Scanner error:", err);
@@ -232,9 +242,429 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
     }
   };
 
+  // ============ PRINT ATTENDANCE LIST ============
+  const handlePrint = () => {
+    const esc = (s) =>
+      String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
+    // Resolve phone from any plausible location on the user document
+    const getMemberPhone = (u) =>
+      u?.phone ||
+      u?.personalInfo?.phone ||
+      u?.personalInfo?.phoneNumber ||
+      u?.personalInfo?.contactNumber ||
+      u?.guardianInfo?.emergencyContact?.contactNo ||
+      u?.alumniInfo?.contactPhone ||
+      "";
+
+    // Pretty-print BD phone numbers: 01XXXXXXXXX → 01XXX-XXXXXX
+    const fmtPhone = (raw) => {
+      const s = String(raw ?? "").trim();
+      if (!s) return "";
+      const digits = s.replace(/\D/g, "");
+      if (digits.length === 11 && digits.startsWith("01")) {
+        return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+      }
+      return s;
+    };
+
+    // Build rows from users actually selected for this session
+    const rows = [];
+    users.forEach((u) => {
+      const idStr = u._id.toString();
+      if (!selectedIds.includes(idStr)) return;
+      const wasAlreadyMarked = initialAttendees.includes(idStr);
+      rows.push({
+        name: u.fullName || "",
+        studentId: u.studentId || "",
+        email: u.email || "",
+        phone: fmtPhone(getMemberPhone(u)),
+        department: u.department || "",
+        classOrYear: u.personalInfo?.classOrYear || "",
+        role: u.role || "member",
+        isNew: !wasAlreadyMarked,
+      });
+    });
+
+    // Sort alphabetically for readability
+    rows.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+    const total = rows.length;
+    const newCount = rows.filter((r) => r.isNew).length;
+    const preCount = total - newCount;
+    const withPhone = rows.filter((r) => r.phone).length;
+    const withEmail = rows.filter((r) => r.email).length;
+
+    const printDate = new Date().toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+    const sessionDateStr = session.sessionDate
+      ? new Date(session.sessionDate).toLocaleDateString(undefined, {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : "—";
+
+    const rowsHtml = rows
+      .map(
+        (r, i) => `
+      <tr>
+        <td class="num">${i + 1}</td>
+        <td>
+          <div class="name">${esc(r.name)}</div>
+          <div class="sub">
+            ${
+              r.studentId
+                ? `<span class="tag">ID: ${esc(r.studentId)}</span>`
+                : ""
+            }
+            ${
+              r.isNew
+                ? `<span class="tag new">NEW</span>`
+                : `<span class="tag prev">PREVIOUSLY MARKED</span>`
+            }
+          </div>
+        </td>
+        <td>${esc(r.department || "—")}</td>
+        <td class="contact">
+          ${r.phone ? `<div>☎ ${esc(r.phone)}</div>` : ""}
+          ${r.email ? `<div>✉ ${esc(r.email)}</div>` : ""}
+          ${!r.email && !r.phone ? `<span class="muted">—</span>` : ""}
+        </td>
+      </tr>
+    `,
+      )
+      .join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Attendance - ${esc(session.sessionTitle)}</title>
+<style>
+  @page { size: A4 portrait; margin: 12mm 10mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+      Helvetica, Arial, sans-serif;
+    color: #3D444C;
+    font-size: 11pt;
+    padding: 0;
+  }
+
+  .header {
+    text-align: center;
+    padding: 12pt 0 14pt;
+    border-bottom: 3px double #3D444C;
+    margin-bottom: 14pt;
+  }
+  .header .club {
+    font-size: 22pt;
+    font-weight: 800;
+    color: #3D444C;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+  .header .subtitle {
+    font-size: 11pt;
+    color: #994D35;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 2pt 0 10pt;
+    font-weight: 600;
+  }
+  .header .doc-title {
+    font-size: 16pt;
+    font-weight: 700;
+    color: #3D444C;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 6pt 0 0;
+  }
+
+  .event-info {
+    margin-bottom: 14pt;
+    border: 1px solid #D3A16D;
+    border-radius: 6pt;
+    padding: 10pt 14pt;
+    background: #FAF8F3;
+  }
+  .event-info table { width: 100%; border-collapse: collapse; }
+  .event-info td {
+    padding: 3pt 0;
+    vertical-align: top;
+    font-size: 10.5pt;
+  }
+  .event-info .label {
+    color: #994D35;
+    font-weight: 700;
+    width: 110pt;
+  }
+  .event-info .value {
+    color: #3D444C;
+    font-weight: 500;
+  }
+
+  .summary {
+    display: flex;
+    gap: 8pt;
+    margin-bottom: 12pt;
+    flex-wrap: wrap;
+  }
+  .chip {
+    border: 1px solid #3D444C;
+    border-radius: 20pt;
+    padding: 4pt 12pt;
+    font-size: 10pt;
+    font-weight: 600;
+    color: #3D444C;
+    background: #FFFFFF;
+  }
+  .chip strong { color: #994D35; }
+
+  table.list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4pt;
+  }
+  table.list thead th {
+    background: #3D444C;
+    color: #FFFFFF;
+    text-align: left;
+    padding: 8pt 6pt;
+    font-size: 10pt;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid #3D444C;
+  }
+  table.list thead th.num,
+  table.list td.num { width: 26pt; text-align: center; }
+
+  table.list tbody td {
+    padding: 8pt 6pt;
+    border: 1px solid #D6D0BE;
+    vertical-align: top;
+    font-size: 10.5pt;
+    color: #3D444C;
+  }
+  table.list tbody tr:nth-child(even) td {
+    background: #FAF8F3;
+  }
+
+  .num { color: #994D35; font-weight: 700; }
+  .name { font-weight: 700; font-size: 11pt; }
+  .sub { margin-top: 2pt; display: flex; gap: 4pt; flex-wrap: wrap; }
+  .tag {
+    font-size: 8pt;
+    background: #E7E3D8;
+    color: #3D444C;
+    padding: 1pt 5pt;
+    border-radius: 8pt;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .tag.new {
+    background: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FCD34D;
+  }
+  .tag.prev {
+    background: #DCFCE7;
+    color: #166534;
+    border: 1px solid #86EFAC;
+  }
+
+  .contact { font-size: 9.5pt; line-height: 1.5; }
+  .contact .muted { color: #AAA; }
+
+  .footer {
+    margin-top: 20pt;
+    padding-top: 10pt;
+    border-top: 1px solid #3D444C;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9pt;
+    color: #666;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 40pt 0;
+    color: #888;
+    font-size: 12pt;
+    font-style: italic;
+  }
+
+  @media print {
+    body { background: #fff !important; }
+    .no-print { display: none !important; }
+    table.list tbody tr { page-break-inside: avoid; }
+    thead { display: table-header-group; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="club">ACC CAREER CLUB</h1>
+    <p class="subtitle">Adamjee Cantonment College</p>
+    <h2 class="doc-title">Session Attendance Sheet</h2>
+  </div>
+
+  <div class="event-info">
+    <table>
+      <tr>
+        <td class="label">Session:</td>
+        <td class="value">${esc(session.sessionTitle)}</td>
+      </tr>
+      ${
+        sessionDateStr !== "—"
+          ? `<tr><td class="label">Date:</td><td class="value">${esc(
+              sessionDateStr,
+            )}</td></tr>`
+          : ""
+      }
+      ${
+        session.sessionTime
+          ? `<tr><td class="label">Time:</td><td class="value">${esc(
+              session.sessionTime,
+            )}</td></tr>`
+          : ""
+      }
+      ${
+        session.location
+          ? `<tr><td class="label">Location:</td><td class="value">${esc(
+              session.location,
+            )}</td></tr>`
+          : ""
+      }
+      ${
+        session.sessionStatus
+          ? `<tr><td class="label">Status:</td><td class="value">${esc(
+              session.sessionStatus,
+            )}</td></tr>`
+          : ""
+      }
+      <tr>
+        <td class="label">Printed:</td>
+        <td class="value">${esc(printDate)}</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="summary">
+    <div class="chip">Total Attendees: <strong>${total}</strong></div>
+    <div class="chip">Newly Marked: <strong>${newCount}</strong></div>
+    <div class="chip">Previously Marked: <strong>${preCount}</strong></div>
+    <div class="chip">With Phone: <strong>${withPhone}</strong></div>
+    <div class="chip">With Email: <strong>${withEmail}</strong></div>
+  </div>
+
+  ${
+    rows.length === 0
+      ? `<div class="empty">No attendees marked for this session.</div>`
+      : `
+    <table class="list">
+      <thead>
+        <tr>
+          <th class="num">#</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Contact</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+  `
+  }
+
+  <div class="footer">
+    <div>ACC Career Club — Session Attendance Register</div>
+    <div>Generated by the club management system</div>
+  </div>
+</body>
+</html>`;
+
+    // Hidden iframe — no new window/tab
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
+
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      setTimeout(() => {
+        try {
+          document.body.removeChild(iframe);
+        } catch (_) {}
+      }, 500);
+    };
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const printNow = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (err) {
+        console.error("Print error:", err);
+        alert("Failed to open print dialog. Please try again.");
+      } finally {
+        const win = iframe.contentWindow;
+        if (win) {
+          const done = () => cleanup();
+          try {
+            win.addEventListener("afterprint", done, { once: true });
+          } catch (_) {}
+          setTimeout(done, 1500);
+        } else {
+          cleanup();
+        }
+      }
+    };
+
+    const waitForReady = () => {
+      const win = iframe.contentWindow;
+      if (win.document.fonts && win.document.fonts.ready) {
+        win.document.fonts.ready.then(() => setTimeout(printNow, 200));
+      } else {
+        setTimeout(printNow, 300);
+      }
+    };
+
+    if (iframe.contentWindow.document.readyState === "complete") {
+      waitForReady();
+    } else {
+      iframe.addEventListener("load", waitForReady, { once: true });
+      setTimeout(waitForReady, 400);
+    }
+  };
+
   // ✅ Counts for display
   const alreadyMarkedCount = selectedIds.filter((id) =>
-    initialAttendees.includes(id)
+    initialAttendees.includes(id),
   ).length;
   const newlySelectedCount = selectedIds.length - alreadyMarkedCount;
 
@@ -408,7 +838,9 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
                       >
                         <FaCheck
                           className={`text-[10px] ${
-                            wasAlreadyMarked ? "text-green-600" : "text-[#3D444C]"
+                            wasAlreadyMarked
+                              ? "text-green-600"
+                              : "text-[#3D444C]"
                           }`}
                         />
                       </div>
@@ -426,18 +858,14 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
                     </p>
                     <p
                       className={`text-xs truncate ${
-                        isSelected
-                          ? "text-white/80"
-                          : "text-[#3D444C]/60"
+                        isSelected ? "text-white/80" : "text-[#3D444C]/60"
                       }`}
                     >
                       ID: {u.studentId || "N/A"}
                     </p>
                     <p
                       className={`text-[10px] truncate ${
-                        isSelected
-                          ? "text-white/70"
-                          : "text-[#3D444C]/50"
+                        isSelected ? "text-white/70" : "text-[#3D444C]/50"
                       }`}
                     >
                       {u.department || "N/A"}
@@ -470,6 +898,18 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
             )}
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={handlePrint}
+              disabled={selectedIds.length === 0}
+              className="px-5 py-2.5 bg-white/10 border border-[#D3A16D]/50 text-[#E7E3D8] rounded-lg hover:bg-[#D3A16D] hover:text-[#3D444C] font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              title={
+                selectedIds.length === 0
+                  ? "Mark attendees first to print the list"
+                  : "Print attendance sheet"
+              }
+            >
+              <FaPrint /> Print
+            </button>
             <button
               onClick={onClose}
               className="px-5 py-2.5 border border-[#E7E3D8]/30 text-[#E7E3D8] rounded-lg hover:bg-white/10 transition-colors font-medium text-sm"

@@ -63,7 +63,7 @@ export async function GET(request) {
       role: { $nin: ["modarator", "alumni"] },
     })
       .select(
-        "fullName email studentId department role personalInfo.profilePicture",
+        "fullName email phone studentId department role personalInfo.profilePicture",
       )
       .sort({ fullName: 1 })
       .lean();
@@ -131,6 +131,7 @@ export async function POST(request) {
     event.externalAttendees = (externalAttendees || []).map((e) => ({
       name: (e.name || "").trim(),
       email: (e.email || "").trim(),
+      phone: (e.phone || "").replace(/\D/g, "").slice(0, 11),
       institution: (e.institution || "").trim(),
       identificationNo: (e.identificationNo || "").trim(),
       addedAt: e.addedAt ? new Date(e.addedAt) : new Date(),

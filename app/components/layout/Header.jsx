@@ -196,6 +196,12 @@ const Header = () => {
                   Events
                 </Link>
                 <Link
+                  href="/articles"
+                  className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors"
+                >
+                  Articles
+                </Link>
+                <Link
                   href="/jobs"
                   className="px-4 py-2 text-sm text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35] rounded-lg transition-colors"
                 >
@@ -498,6 +504,13 @@ const Header = () => {
                     onClick={closeMenu}
                   >
                     Events
+                  </Link>
+                  <Link
+                    href="/articles"
+                    className="block px-4 py-1 text-sm text-[#3D444C] rounded-lg hover:bg-[#D3A16D]/20 hover:text-[#994D35] transition-all duration-200"
+                    onClick={closeMenu}
+                  >
+                    Articles
                   </Link>
                   <Link
                     href="/jobs"

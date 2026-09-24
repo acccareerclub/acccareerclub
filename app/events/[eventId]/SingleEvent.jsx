@@ -53,6 +53,7 @@ const SingleEvent = ({ eventId }) => {
   const [extForm, setExtForm] = useState({
     name: "",
     email: "",
+    phone: "",
     institution: "",
     identificationNo: "",
   });
@@ -214,6 +215,7 @@ const SingleEvent = ({ eventId }) => {
         setExtForm({
           name: "",
           email: "",
+          phone: "",
           institution: "",
           identificationNo: "",
         });
@@ -929,6 +931,21 @@ const PreRegistrationCard = ({
             value={extForm.email}
             onChange={(e) =>
               setExtForm((p) => ({ ...p, email: e.target.value }))
+            }
+            disabled={closed}
+            className="w-full px-4 py-2.5 border border-[#3D444C]/20 rounded-lg text-sm focus:outline-none focus:border-[#3D444C]"
+          />
+                    <input
+            type="tel"
+            inputMode="numeric"
+            maxLength={11}
+            placeholder="Phone (11 digits max)"
+            value={extForm.phone}
+            onChange={(e) =>
+              setExtForm((p) => ({
+                ...p,
+                phone: e.target.value.replace(/\D/g, "").slice(0, 11),
+              }))
             }
             disabled={closed}
             className="w-full px-4 py-2.5 border border-[#3D444C]/20 rounded-lg text-sm focus:outline-none focus:border-[#3D444C]"

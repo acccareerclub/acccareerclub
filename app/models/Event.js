@@ -126,6 +126,10 @@ const EventSchema = new mongoose.Schema(
           type: String,
           trim: true,
         },
+        phone: {
+          type: Number,
+          trim: true,
+        },
         email: {
           type: String,
           trim: true,
@@ -165,6 +169,11 @@ const EventSchema = new mongoose.Schema(
         },
         email: {
           type: String,
+          trim: true,
+          default: "",
+        },
+        phone: {
+          type: Number,
           trim: true,
           default: "",
         },

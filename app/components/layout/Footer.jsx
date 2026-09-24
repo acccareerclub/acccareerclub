@@ -57,8 +57,9 @@ const Footer = () => {
     { name: "About Us", href: "/about" },
     { name: "Jobs", href: "/jobs" },
     { name: "Companies", href: "/companies" },
+    { name: "Sessions", href: "/sessions" },
     { name: "Events", href: "/events" },
-    { name: "Blog", href: "/blog" },
+    { name: "Articles", href: "/articles" },
     { name: "Contact", href: "/contact" },
   ];
 
@@ -164,7 +165,7 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Column 4 - Contact Info & Newsletter */}
+          {/* Column 4 - Contact Info & Articles */}
           <div>
             <h3 className="text-lg font-semibold text-[#E7E3D8] mb-4 relative">
               Get in Touch
@@ -192,10 +193,10 @@ const Footer = () => {
               </div>
             </div>
 
-            {/* Newsletter Signup - Updated for mobile */}
+            {/* Articles Signup - Updated for mobile */}
             <div className="mt-4 pt-4 border-t border-white/10">
               <p className="text-xs text-white/60 mb-2">
-                Subscribe to our newsletter
+                Subscribe to our articles
               </p>
               <form
                 className="flex flex-col sm:flex-row gap-2 sm:gap-0"

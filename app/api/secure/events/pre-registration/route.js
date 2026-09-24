@@ -125,6 +125,7 @@ export async function POST(request) {
       userId: u.userId || undefined, // optional for external
       name: u.name || "",
       email: u.email || "",
+      phone: (u.phone || "").replace(/\D/g, "").slice(0, 11),
       institution: u.institution || "", // ✅ include institution
       identificationNo: u.identificationNo || "",
     }));

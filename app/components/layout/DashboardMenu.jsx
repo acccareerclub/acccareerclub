@@ -1,9 +1,9 @@
 // app/components/layout/DashboardMenu.jsx
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   FaHome,
   FaUsers,
@@ -14,10 +14,11 @@ import {
   FaCog,
   FaChevronLeft,
   FaChevronRight,
-} from 'react-icons/fa';
+  FaClipboardList,
+} from "react-icons/fa";
 import { FaUsersViewfinder } from "react-icons/fa6";
 import { MdOutlineEmojiEvents } from "react-icons/md";
-import { GrCertificate } from "react-icons/gr";
+import { GrArticle, GrCertificate } from "react-icons/gr";
 
 const DashboardMenu = () => {
   const pathname = usePathname();
@@ -27,71 +28,77 @@ const DashboardMenu = () => {
 
   const menuItems = [
     {
-      id: 'dashboard',
-      label: 'Dashboard',
+      id: "dashboard",
+      label: "Dashboard",
       icon: FaHome,
-      href: '/dashboard',
+      href: "/dashboard",
     },
     {
-      id: 'users',
-      label: 'Users',
+      id: "users",
+      label: "Users",
       icon: FaUsers,
-      href: '/dashboard/users',
+      href: "/dashboard/users",
     },
     {
-      id: 'notice',
-      label: 'Notice',
+      id: "notice",
+      label: "Notice",
       icon: FaBullhorn,
-      href: '/dashboard/notice',
+      href: "/dashboard/notice",
     },
     {
-      id: 'sessions',
-      label: 'Sessions',
+      id: "sessions",
+      label: "Sessions",
       icon: FaUsersViewfinder,
-      href: '/dashboard/sessions',
+      href: "/dashboard/sessions",
     },
     {
-      id: 'events',
-      label: 'Events',
+      id: "events",
+      label: "Events",
       icon: MdOutlineEmojiEvents,
-      href: '/dashboard/events',
+      href: "/dashboard/events",
     },
     {
-      id: 'certificates',
-      label: 'Certificates',
+      id: "certificates",
+      label: "Certificates",
       icon: GrCertificate,
-      href: '/dashboard/certificates',
+      href: "/dashboard/certificates",
     },
     {
-      id: 'jobs',
-      label: 'Jobs',
+      id: "jobs",
+      label: "Jobs",
       icon: FaBriefcase,
-      href: '/dashboard/jobs',
+      href: "/dashboard/jobs",
     },
     {
-      id: 'companies',
-      label: 'Companies',
+      id: "companies",
+      label: "Companies",
       icon: FaBuilding,
-      href: '/dashboard/companies',
+      href: "/dashboard/companies",
     },
     {
-      id: 'newsletter',
-      label: 'Newsletter',
-      icon: FaEnvelope,
-      href: '/dashboard/newsletter',
+      id: "articles",
+      label: "Articles",
+      icon: GrArticle,
+      href: "/dashboard/articles",
     },
     {
-      id: 'settings',
-      label: 'App Settings',
+      id: "reports",
+      label: "Reports",
+      icon: FaClipboardList,
+      href: "/dashboard/reports/attendance",
+    },
+    {
+      id: "settings",
+      label: "App Settings",
       icon: FaCog,
-      href: '/dashboard/settings',
+      href: "/dashboard/settings",
     },
   ];
 
   // Check if a path is active
   const isActive = (href) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
+    if (href === "/dashboard") {
+      return pathname === "/dashboard";
     }
     return pathname?.startsWith(href);
   };
@@ -102,7 +109,8 @@ const DashboardMenu = () => {
     if (container) {
       setShowLeftArrow(container.scrollLeft > 0);
       setShowRightArrow(
-        container.scrollLeft < container.scrollWidth - container.clientWidth - 10
+        container.scrollLeft <
+          container.scrollWidth - container.clientWidth - 10,
       );
     }
   };
@@ -110,12 +118,12 @@ const DashboardMenu = () => {
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (container) {
-      container.addEventListener('scroll', checkScroll);
-      window.addEventListener('resize', checkScroll);
+      container.addEventListener("scroll", checkScroll);
+      window.addEventListener("resize", checkScroll);
       checkScroll();
       return () => {
-        container.removeEventListener('scroll', checkScroll);
-        window.removeEventListener('resize', checkScroll);
+        container.removeEventListener("scroll", checkScroll);
+        window.removeEventListener("resize", checkScroll);
       };
     }
   }, []);
@@ -124,10 +132,12 @@ const DashboardMenu = () => {
     const container = scrollContainerRef.current;
     if (container) {
       const scrollAmount = 200;
-      const newScrollLeft = container.scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+      const newScrollLeft =
+        container.scrollLeft +
+        (direction === "left" ? -scrollAmount : scrollAmount);
       container.scrollTo({
         left: newScrollLeft,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
   };
@@ -137,7 +147,7 @@ const DashboardMenu = () => {
       {/* Left Arrow */}
       {showLeftArrow && (
         <button
-          onClick={() => scroll('left')}
+          onClick={() => scroll("left")}
           className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white p-2 rounded-r-lg shadow-lg transition-all duration-200 hover:shadow-xl border-r border-gray-200"
           aria-label="Scroll left"
         >
@@ -148,7 +158,7 @@ const DashboardMenu = () => {
       {/* Right Arrow */}
       {showRightArrow && (
         <button
-          onClick={() => scroll('right')}
+          onClick={() => scroll("right")}
           className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white p-2 rounded-l-lg shadow-lg transition-all duration-200 hover:shadow-xl border-l border-gray-200"
           aria-label="Scroll right"
         >
@@ -161,8 +171,8 @@ const DashboardMenu = () => {
         ref={scrollContainerRef}
         className="flex overflow-x-auto scrollbar-hide py-3 px-4 gap-1 scroll-smooth"
         style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
         }}
       >
         {menuItems.map((item) => {
@@ -175,13 +185,16 @@ const DashboardMenu = () => {
               href={item.href}
               className={`
                 flex items-center gap-2 px-2 md:px-4 py-1.25 md:py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200
-                ${active
-                  ? 'bg-[#994D35] text-white shadow-md'
-                  : 'text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35]'
+                ${
+                  active
+                    ? "bg-[#994D35] text-white shadow-md"
+                    : "text-[#3D444C] hover:bg-[#E7E3D8] hover:text-[#994D35]"
                 }
               `}
             >
-              <Icon className={`text-base ${active ? 'text-white' : 'text-[#994D35]'}`} />
+              <Icon
+                className={`text-base ${active ? "text-white" : "text-[#994D35]"}`}
+              />
               <span>{item.label}</span>
               {active && (
                 <span className="w-1.5 h-1.5 bg-white rounded-full ml-1"></span>

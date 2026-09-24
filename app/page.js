@@ -3,6 +3,7 @@ import React from "react";
 import FacebookEmbaded from "./components/home/FacebookEmbaded";
 import HomeNotice from "./components/home/HomeNotice";
 import CarosolSectors from "./components/home/CarosolSectors";
+import HomeFeatured from "./components/home/HomeFeatured";
 
 export const metadata = {
   title: {
@@ -123,6 +124,9 @@ export const metadata = {
 const Home = () => {
   return (
     <>
+      <div>
+        <HomeFeatured />
+      </div>
       <div className="mt-5">
         <HomeNotice />
       </div>

@@ -12,7 +12,7 @@ export async function GET(request) {
     if (!token) {
       return NextResponse.json(
         { success: false, message: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -26,7 +26,7 @@ export async function GET(request) {
     if (!decoded || !allowedRoles.includes(decoded.role)) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -37,7 +37,9 @@ export async function GET(request) {
       isActive: true,
       role: { $nin: ["modarator", "alumni"] }, // Exclude these roles
     })
-      .select("fullName email studentId department role personalInfo.classOrYear personalInfo.profilePicture")
+      .select(
+        "fullName email phone studentId department role personalInfo.classOrYear personalInfo.profilePicture",
+      )
       .sort({ fullName: 1 })
       .lean();
 
@@ -50,7 +52,7 @@ export async function GET(request) {
     console.error("❌ Get eligible users error:", error);
     return NextResponse.json(
       { success: false, message: "Failed to fetch users" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -62,7 +64,7 @@ export async function POST(request) {
     if (!token) {
       return NextResponse.json(
         { success: false, message: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -76,7 +78,7 @@ export async function POST(request) {
     if (!decoded || !allowedRoles.includes(decoded.role)) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -86,7 +88,7 @@ export async function POST(request) {
     if (!sessionId || !Array.isArray(attendeeIds)) {
       return NextResponse.json(
         { success: false, message: "Session ID and attendee list required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -96,7 +98,7 @@ export async function POST(request) {
     if (!session) {
       return NextResponse.json(
         { success: false, message: "Session not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -123,7 +125,7 @@ export async function POST(request) {
     console.error("❌ Save attendance error:", error);
     return NextResponse.json(
       { success: false, message: "Failed to save attendance" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
