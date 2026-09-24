@@ -24,7 +24,7 @@ import Image from "next/image";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 const AVATAR_FALLBACK =
-  "https://res.cloudinary.com/ffuatrrt/image/upload/v1784889142/default-avatar.png";
+  "https://res.cloudinary.com/ffuatrrt/image/upload/v1790254660/default_avatar_ugedyd.avif";
 
 // Stable key for an external attendee (name + email or ID)
 const extKey = (e) =>
