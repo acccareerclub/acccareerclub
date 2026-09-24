@@ -187,6 +187,7 @@ export const sendStudentConfirmationEmail = async (userData) => {
 
 // Send verification success email
 export const sendVerificationSuccessEmail = async (userData) => {
+  const { membershipId } = userData || {};
   const subject = `Account Verified - Welcome to ACC Career Club! 🎉`;
 
   const html = `
@@ -209,15 +210,30 @@ export const sendVerificationSuccessEmail = async (userData) => {
         
         <p style="color: #555;">Great news! Your account has been verified successfully. You are now officially a member of the ACC Career Club community. 🎉</p>
         
-        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 15px; border-radius: 4px; margin: 20px 0;">
-          <p style="margin: 0; color: #155724;">
-            <strong>You can now:</strong><br>
-            ✅ Access career counseling resources<br>
-            ✅ Connect with alumni and industry professionals<br>
-            ✅ Discover internships and job opportunities<br>
-            ✅ Participate in club events and workshops
-          </p>
-        </div>
+                  ${
+            membershipId
+              ? `
+          <div style="background: linear-gradient(135deg, #E7E3D8, #F9FAFB); border-left: 4px solid #D3A16D; border-radius: 8px; padding: 18px 20px; margin: 20px 0; text-align: center;">
+            <p style="margin: 0 0 6px 0; color: #6B7280; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;">
+              Your Membership ID
+            </p>
+            <p style="margin: 0; color: #3D444C; font-size: 26px; font-weight: 800; font-family: 'Courier New', monospace; letter-spacing: 2px;">
+              ${membershipId}
+            </p>
+          </div>
+          `
+              : ""
+          }
+
+          <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 15px; border-radius: 4px; margin: 20px 0;">
+            <p style="margin: 0; color: #155724;">
+              <strong>You can now:</strong><br>
+              ✅ Access career counseling resources<br>
+              ✅ Connect with alumni and industry professionals<br>
+              ✅ Discover internships and job opportunities<br>
+              ✅ Participate in club events and workshops
+            </p>
+          </div>
         
         <div style="text-align: center; margin: 30px 0;">
           <a href="${process.env.NEXTAUTH_URL || "http://ccacc.vercel.app"}/login" 
@@ -330,6 +346,7 @@ export const sendWelcomeEmail = async ({
   password,
   studentId,
   role,
+  membershipId,
 }) => {
   const subject = `Welcome to ACC Career Club - Your Account Details`;
 
@@ -360,6 +377,11 @@ export const sendWelcomeEmail = async ({
             <strong>Student ID:</strong> ${studentId}<br>
             <strong>Password:</strong> <span style="background: #f5f5f5; padding: 2px 8px; border-radius: 4px; font-family: monospace;">${password}</span><br>
             <strong>Role:</strong> ${role.charAt(0).toUpperCase() + role.slice(1)}
+            ${
+              membershipId
+                ? `<strong>Membership ID:</strong>${membershipId}<br>`
+                : ""
+            }
           </p>
         </div>
         
@@ -1188,7 +1210,6 @@ export const sendAlumniWelcomeEmail = async ({
   });
 };
 
-
 // ==========================================
 // Send feedback request email after a session is completed
 // ==========================================
@@ -1392,7 +1413,9 @@ export const sendCertificateEmail = async ({
   const achievementText =
     achievementTitle ||
     (achievementPosition
-      ? achievementPosition.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+      ? achievementPosition
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase())
       : "");
 
   const html = `

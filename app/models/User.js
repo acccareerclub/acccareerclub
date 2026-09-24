@@ -94,6 +94,10 @@ const UserSchema = new mongoose.Schema(
       profilePicture: String,
       bio: String,
     },
+    membershipId:{
+      type:String,
+      default: "", //e.g. 260001
+    },
 
     // ==========================================
     // 4. GUARDIAN INFORMATION (Optional)
@@ -412,6 +416,13 @@ UserSchema.on("index", function (error) {
     console.log("✅ Indexes created successfully");
   }
 });
+UserSchema.index(
+  { membershipId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { membershipId: { $type: "string", $ne: "" } },
+  }
+);
 
 // Check if model exists before creating a new one
 const User = mongoose.models.User || mongoose.model("User", UserSchema);

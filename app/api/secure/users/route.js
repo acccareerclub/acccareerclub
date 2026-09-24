@@ -6,6 +6,7 @@ import User from "../../../models/User";
 import DynamicRole from "../../../models/DynamicRole";
 import { getCurrentUser } from "../../../lib/authUtils";
 import { sendVerificationSuccessEmail } from "../../../lib/mailsystem";
+import { assignMembershipId } from "../../../lib/membershipId";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -258,12 +259,29 @@ export async function PUT(request) {
       user.isVerified = true;
       await user.save();
 
-      // Send verification success email
+      // ✅ Assign a membership ID if the user doesn't have one yet
+      let finalMembershipId = user.membershipId;
+      if (!finalMembershipId) {
+        const result = await assignMembershipId(user._id);
+        if (!result.success) {
+          console.error(
+            `Failed to assign membershipId for user ${user._id}:`,
+            result.error,
+          );
+          // Don't block verification — the user is verified.
+          // Log it, and you can backfill later with the helper below.
+        } else {
+          finalMembershipId = result.membershipId;
+        }
+      }
+
+      // Send the verification-success email — include the membership ID
       const emailResult = await sendVerificationSuccessEmail({
         fullName: user.fullName,
         email: user.email,
         studentId: user.studentId,
         department: user.department,
+        membershipId: finalMembershipId, // optional but recommended
       });
 
       if (emailResult.success) {
@@ -278,7 +296,10 @@ export async function PUT(request) {
       return NextResponse.json({
         success: true,
         message: "User verified successfully",
-        user,
+        user: {
+          ...user.toObject(),
+          membershipId: finalMembershipId,
+        },
         emailSent: emailResult.success,
       });
     } else if (action === "delete") {

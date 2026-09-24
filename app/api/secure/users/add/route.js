@@ -1,11 +1,10 @@
 // app/api/secure/users/add/route.js
-
-// app/api/secure/users/add/route.js
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "../../../../lib/mongodb";
 import User from "../../../../models/User";
 import { getCurrentUser, hashPassword } from "../../../../lib/authUtils";
 import { sendWelcomeEmail } from "../../../../lib/mailsystem";
+import { assignMembershipId } from "../../../../lib/membershipId";
 
 export async function POST(request) {
   try {
@@ -17,7 +16,7 @@ export async function POST(request) {
     if (!token) {
       return NextResponse.json(
         { success: false, message: "Not authenticated" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -25,23 +24,28 @@ export async function POST(request) {
     if (!decoded) {
       return NextResponse.json(
         { success: false, message: "Invalid token" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // Check if user has admin role
-    const allowedRoles = ["prefect", "itsecretary", "modarator", "assistant_prefect"];
+    const allowedRoles = [
+      "prefect",
+      "itsecretary",
+      "modarator",
+      "assistant_prefect",
+    ];
     if (!allowedRoles.includes(decoded.role)) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     await connectToDatabase();
 
     const body = await request.json();
-    
+
     // Check if user already exists
     const existingUser = await User.findOne({
       $or: [
@@ -52,13 +56,37 @@ export async function POST(request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { success: false, message: "User with this email or student ID already exists" },
-        { status: 400 }
+        {
+          success: false,
+          message: "User with this email or student ID already exists",
+        },
+        { status: 400 },
       );
     }
 
     // Hash password
-    const hashedPassword = await hashPassword(body.password);
+    // ---------- Resolve password ----------
+    // If the caller didn't send a password (or sent an empty string),
+    // generate a random 8-digit numeric password.
+    let finalPassword = (body.password || "").trim();
+
+    if (!finalPassword) {
+      // Cryptographically random 8-digit number (10000000–99999999).
+      // Using crypto.randomInt for uniform distribution + no Math.random bias.
+      const { randomInt } = await import("crypto");
+      finalPassword = String(randomInt(10000000, 100000000));
+    } else if (finalPassword.length < 8) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Password must be at least 8 characters.",
+        },
+        { status: 400 },
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await hashPassword(finalPassword);
 
     // Create user object
     const userData = {
@@ -141,13 +169,28 @@ export async function POST(request) {
     // Create user
     const user = await User.create(userData);
 
-    // Send welcome email with credentials
+    // ✅ Assign membership ID immediately (added by authority)
+    const membershipResult = await assignMembershipId(user._id);
+    if (!membershipResult.success) {
+      // Roll back — do not leave a half-created user without an ID
+      await User.findByIdAndDelete(user._id);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Failed to assign membership ID. Please try again.",
+        },
+        { status: 500 },
+      );
+    }
+
+    // Send welcome email with credentials (add membershipId if you want to include it)
     await sendWelcomeEmail({
       fullName: body.fullName,
       email: body.email,
-      password: body.password,
+      password: finalPassword,
       studentId: body.studentId,
       role: body.role || "member",
+      membershipId: membershipResult.membershipId, // optional: include in email
     });
 
     return NextResponse.json({
@@ -158,6 +201,7 @@ export async function POST(request) {
         fullName: user.fullName,
         email: user.email,
         studentId: user.studentId,
+        membershipId: membershipResult.membershipId,
       },
     });
   } catch (error) {
@@ -166,9 +210,10 @@ export async function POST(request) {
       {
         success: false,
         message: "Failed to add user",
-        error: process.env.NODE_ENV === "development" ? error.message : undefined,
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
