@@ -210,7 +210,7 @@ export const SkillsModal = ({ isOpen, onClose, onSave, skills, interests, custom
             onClick={handleSave}
             className="px-6 py-2 bg-[#994D35] text-white rounded-lg hover:bg-[#D3A16D] transition-colors"
           >
-            Save Changes
+            Add
           </button>
         </div>
       </div>

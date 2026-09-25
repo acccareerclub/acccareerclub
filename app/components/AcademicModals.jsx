@@ -18,6 +18,7 @@ export const AddSemesterModal = ({ isOpen, onClose, onAdd, examType }) => {
     setFormData({ ...formData, [name]: value });
   };
 
+  
   const handleSubmit = (e) => {
     e.preventDefault();
     const number = parseInt(formData.number);
@@ -62,20 +63,35 @@ export const AddSemesterModal = ({ isOpen, onClose, onAdd, examType }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {examType === "semester" ? "Semester Number" : "Year Number"} *
             </label>
-            <input
-              type="number"
+            <select
               name="number"
-              value={formData.number}
+              value={formData.number || ""}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent"
-              placeholder={`Enter ${examType === "semester" ? "semester" : "year"} number`}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent bg-white"
               required
-              min="1"
-            />
+            >
+              <option value="">
+                Select {examType === "semester" ? "Semester" : "Year"}
+              </option>
+              {(examType === "semester"
+                ? [1, 2, 3, 4, 5, 6, 7, 8]
+                : [1, 2, 3, 4]
+              ).map((n) => {
+                const suffix =
+                  n === 1 ? "st" : n === 2 ? "nd" : n === 3 ? "rd" : "th";
+                const label = examType === "semester" ? "Semester" : "Year";
+                return (
+                  <option key={n} value={n}>
+                    {n}
+                    {suffix} {label}
+                  </option>
+                );
+              })}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Year
+              Exam Year
             </label>
             <input
               type="text"

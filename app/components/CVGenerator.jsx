@@ -92,9 +92,7 @@ const CVGenerator = ({ user }) => {
                   <div className="timeline-title">
                     {val(club.clubName, "Club not specified")}
                   </div>
-                  <div className="timeline-date">
-                    {val(club.duration, "—")}
-                  </div>
+                  <div className="timeline-date">{val(club.duration, "—")}</div>
                 </div>
                 <div className="timeline-subtitle">
                   {val(club.position, "Position not specified")}
@@ -118,9 +116,7 @@ const CVGenerator = ({ user }) => {
                   <div className="timeline-title">
                     {val(job.organization, "Organization not specified")}
                   </div>
-                  <div className="timeline-date">
-                    {val(job.duration, "—")}
-                  </div>
+                  <div className="timeline-date">{val(job.duration, "—")}</div>
                 </div>
                 <div className="timeline-subtitle">
                   {val(job.designation, "Designation not specified")}
@@ -546,7 +542,7 @@ const CVGenerator = ({ user }) => {
     return [
       {
         id: "personal",
-        height: HEIGHTS.sideBlock,
+        height: HEIGHTS.sideBlock + 30,
         jsx: (
           <div className="side-block" key="personal">
             <div className="section-title">Personal</div>
@@ -570,6 +566,26 @@ const CVGenerator = ({ user }) => {
                 }`}
               >
                 {val(user?.personalInfo?.bloodGroup, "Not provided")}
+              </span>
+            </div>
+            <div className="info-line">
+              <span className="label">Religion</span>
+              <span
+                className={`value ${
+                  !user?.personalInfo?.religion ? "empty-val" : ""
+                }`}
+              >
+                {val(user?.personalInfo?.religion, "Not provided")}
+              </span>
+            </div>
+            <div className="info-line">
+              <span className="label">Marital Status</span>
+              <span
+                className={`value ${
+                  !user?.personalInfo?.maritalStatus ? "empty-val" : ""
+                }`}
+              >
+                {val(user?.personalInfo?.maritalStatus, "Not provided")}
               </span>
             </div>
             <div className="info-line">
@@ -765,16 +781,14 @@ const CVGenerator = ({ user }) => {
       },
       {
         id: "membership",
-        height: 110,
+        height: 90,
         jsx: (
           <div className="side-block" key="membership">
             <div className="section-title">Membership</div>
             <div className="info-line">
               <span className="label">Member Since</span>
               <span className={`value ${!user?.createdAt ? "empty-val" : ""}`}>
-                {user?.createdAt
-                  ? formatDate(user.createdAt)
-                  : "Not available"}
+                {user?.createdAt ? formatDate(user.createdAt) : "Not available"}
               </span>
             </div>
             <div className="info-line">
@@ -1139,6 +1153,34 @@ const CVGenerator = ({ user }) => {
             font-weight: 700;
             opacity: 0.5;
           }
+
+          /* ============ SIGNATURE BLOCK (absolute) ============ */
+          .signature-block {
+            position: absolute;
+            right: 34px;
+            bottom: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            z-index: 5;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .signature-line {
+            width: 160px;
+            border-bottom: 1.5px solid #3D444C;
+            height: 32px;
+          }
+          .signature-label {
+            margin-top: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #994D35;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            text-align: right;
+            width: 160px;
+          }
         `}</style>
       </head>
       <body>
@@ -1186,7 +1228,7 @@ const CVGenerator = ({ user }) => {
               </div>
             )}
 
-            {/* Body grid — alignItems: stretch is the key fix */}
+            {/* Body grid */}
             <div
               style={{
                 display: "grid",
@@ -1199,7 +1241,7 @@ const CVGenerator = ({ user }) => {
                 alignItems: "stretch",
               }}
             >
-              {/* Main column — flex to allow END marker push */}
+              {/* Main column */}
               <div
                 className="main-col"
                 style={{
@@ -1216,11 +1258,10 @@ const CVGenerator = ({ user }) => {
 
                 {pageBlocks.map((block) => block.jsx)}
 
-                {/* End-of-content marker pushed to bottom */}
                 <div className="end-marker">• END OF CONTENT •</div>
               </div>
 
-              {/* Side column — fills full height of grid row */}
+              {/* Side column */}
               <div
                 className="side-col"
                 style={{
@@ -1229,15 +1270,24 @@ const CVGenerator = ({ user }) => {
                   borderLeft: "3px solid #D3A16D",
                   height: "100%",
                   alignSelf: "stretch",
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
                 {pageIdx === 0 && sideBlocks.map((b) => b.jsx)}
               </div>
             </div>
 
+            {/* Signature — only on the last sheet, absolutely positioned */}
+            {pageIdx === totalPages - 1 && (
+              <div className="signature-block">
+                <div className="signature-line" />
+                <div className="signature-label">Student&apos;s Signature</div>
+              </div>
+            )}
+
             {/* Footer */}
             <div className="footer">
-              Generated from <span>ACC Career Club</span> •{" "}
               {val(user?.fullName, "Unknown")} • Page {pageIdx + 1} of{" "}
               {totalPages}
             </div>

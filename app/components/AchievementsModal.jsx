@@ -254,18 +254,18 @@ const AchievementsModal = ({ isOpen, onClose, onSave, achievements, isAdminMode 
         </button>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-6 mt-6 border-t border-[#3D444C]/10">
+        <div className="flex gap-3 pt-3 md:pt-6 mt-6 border-t border-[#3D444C]/10">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 border border-[#3D444C]/30 rounded-lg hover:bg-[#E7E3D8] text-[#3D444C] font-medium"
+            className="flex-1 px-2 py-2 md:px-4 md:py-3 border border-[#3D444C]/30 rounded-lg hover:bg-[#E7E3D8] text-[#3D444C] font-medium"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex-1 px-4 py-3 bg-[#3D444C] text-[#E7E3D8] rounded-lg hover:bg-[#994D35] font-medium"
+            className="flex-1 px-2 py-2 md:px-4 md:py-3 bg-[#3D444C] text-[#E7E3D8] rounded-lg hover:bg-[#994D35] font-medium"
           >
-            Save Achievements
+            + Add
           </button>
         </div>
       </div>

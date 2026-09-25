@@ -38,6 +38,7 @@ import {
 import ChangePasswordModal from "../../components/ChangePasswordModal";
 import EditEmailModal from "../../components/EditEmailModal";
 import { SkillsModal } from "../../components/SkillsModal";
+import ProfileCompletionBar from "../../components/ProfileCompletionRing";
 import Image from "next/image";
 import Link from "next/link";
 import ReactDOMServer from "react-dom/server";
@@ -196,30 +197,38 @@ const ProfileClient = () => {
     }
   }, [user]);
 
-  // Experience
   const handleExperienceSave = (experienceData) => {
     setFormData({
       ...formData,
       experience: experienceData,
     });
+    setUser((prev) => ({
+      ...prev,
+      experience: experienceData,
+    }));
   };
 
-  // Achievements (user-editable)
   const handleAchievementsSave = (achievementsData) => {
     setFormData({
       ...formData,
       achievements: achievementsData,
     });
+    setUser((prev) => ({
+      ...prev,
+      achievements: achievementsData,
+    }));
   };
 
-  // ACC Career Club Achievements (admin-only)
   const handleClubAchievementsSave = (achievementsData) => {
     setFormData({
       ...formData,
       accCareerClubAchievements: achievementsData,
     });
+    setUser((prev) => ({
+      ...prev,
+      accCareerClubAchievements: achievementsData,
+    }));
   };
-
   // Image upload handlers
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
@@ -337,6 +346,26 @@ const ProfileClient = () => {
   };
 
   const handleRemoveArrayItem = (section, arrayName, index) => {
+    // Only academicInfo.university has semesters/years arrays.
+    // Everything else falls back to the shallow path for safety.
+    if (section === "academicInfo" && arrayName !== "university") {
+      const current = formData.academicInfo?.university?.[arrayName] || [];
+      const newArray = [...current];
+      newArray.splice(index, 1);
+      setFormData({
+        ...formData,
+        academicInfo: {
+          ...formData.academicInfo,
+          university: {
+            ...formData.academicInfo?.university,
+            [arrayName]: newArray,
+          },
+        },
+      });
+      return;
+    }
+
+    // Fallback for any other shape
     const newArray = [...(formData[section]?.[arrayName] || [])];
     newArray.splice(index, 1);
     setFormData({
@@ -583,6 +612,14 @@ const ProfileClient = () => {
         sscOrEquivalent: data,
       },
     });
+    // ✅ Also update the displayed user object so UI reflects the change
+    setUser((prev) => ({
+      ...prev,
+      academicInfo: {
+        ...prev.academicInfo,
+        sscOrEquivalent: data,
+      },
+    }));
   };
 
   const handleEditHSC = (data) => {
@@ -593,16 +630,23 @@ const ProfileClient = () => {
         hscOrEquivalent: data,
       },
     });
+    setUser((prev) => ({
+      ...prev,
+      academicInfo: {
+        ...prev.academicInfo,
+        hscOrEquivalent: data,
+      },
+    }));
   };
-
   const handleSkillsSave = (skillsData) => {
-    setFormData({
-      ...formData,
+    const next = {
       skills: skillsData.skills,
       interests: skillsData.interests,
       customSkills: skillsData.customSkills,
       customInterests: skillsData.customInterests,
-    });
+    };
+    setFormData({ ...formData, ...next });
+    setUser((prev) => ({ ...prev, ...next }));
   };
 
   const openEditModal = (type, index) => {
@@ -657,6 +701,40 @@ const ProfileClient = () => {
       setFormData(user);
       setIsEditing(false);
     }
+  };
+
+  // Scroll to a section and briefly highlight it
+  const handleJumpToSection = (sectionId) => {
+    if (typeof document === "undefined" || !sectionId) return;
+
+    // If we're not editing yet, enter edit mode so the fields are editable
+    if (!isEditing) setIsEditing(true);
+
+    // Wait one frame so the DOM updates with edit inputs, then scroll
+    requestAnimationFrame(() => {
+      const el = document.getElementById(sectionId);
+      if (!el) return;
+
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      // Highlight pulse
+      el.classList.add(
+        "ring-4",
+        "ring-[#D3A16D]",
+        "ring-offset-2",
+        "rounded-2xl",
+        "transition-all",
+        "duration-500",
+      );
+      setTimeout(() => {
+        el.classList.remove(
+          "ring-4",
+          "ring-[#D3A16D]",
+          "ring-offset-2",
+          "rounded-2xl",
+        );
+      }, 2000);
+    });
   };
 
   const handleDownloadUniversalCV = () => {
@@ -832,11 +910,20 @@ const ProfileClient = () => {
           }
         </div>
 
+        {/* Profile Completion Bar — click a missing chip to jump */}
+        <ProfileCompletionBar
+          user={isEditing ? formData : user}
+          onJumpTo={handleJumpToSection}
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Profile Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden sticky top-8">
-              <div className="h-24 sm:h-32 bg-gradient-to-r from-[#3D444C] to-[#994D35] relative">
+              <div
+                id="profile-photo"
+                className="h-24 sm:h-32 bg-gradient-to-r from-[#3D444C] to-[#994D35] relative"
+              >
                 <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
                   <div className="relative">
                     <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white p-1 shadow-xl">
@@ -1014,7 +1101,10 @@ const ProfileClient = () => {
           {/* Right Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information */}
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div
+              id="profile-personal"
+              className="bg-white rounded-2xl shadow-xl p-6"
+            >
               <div className="flex items-center gap-3 mb-4">
                 <FaUser className="text-[#994D35] text-xl" />
                 <h3 className="text-xl font-bold text-[#3D444C]">
@@ -1118,6 +1208,7 @@ const ProfileClient = () => {
                       type="text"
                       name="classOrYear"
                       value={formData.personalInfo?.classOrYear || ""}
+                      placeholder="1st Year, 2nd Semester "
                       onChange={(e) =>
                         handleNestedInputChange(
                           "personalInfo",
@@ -1217,6 +1308,33 @@ const ProfileClient = () => {
                   ) : (
                     <p className="text-[#3D444C] font-medium">
                       {user?.personalInfo?.religion || "Not provided"}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
+                    Marital Status
+                  </label>
+                  {isEditing ? (
+                    <select
+                      name="maritalStatus"
+                      value={formData.personalInfo?.maritalStatus || ""}
+                      onChange={(e) =>
+                        handleNestedInputChange(
+                          "personalInfo",
+                          "maritalStatus",
+                          e.target.value,
+                        )
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent text-[#3D444C] bg-white"
+                    >
+                      <option value="">Select Status</option>
+                      <option value="Unmarried">Unmarried</option>
+                      <option value="Married">Married</option>
+                    </select>
+                  ) : (
+                    <p className="text-[#3D444C] font-medium">
+                      {user?.personalInfo?.maritalStatus || "Not provided"}
                     </p>
                   )}
                 </div>
@@ -1388,32 +1506,10 @@ const ProfileClient = () => {
                     Academic Information
                   </h3>
                 </div>
-                {isEditing && (
-                  <div className="flex gap-2">
-                    {formData.academicInfo?.university?.examSystem ===
-                      "semester" && (
-                      <button
-                        onClick={() => setShowAddSemesterModal(true)}
-                        className="flex items-center gap-1 text-[#994D35] hover:text-[#D3A16D] transition-colors text-sm bg-[#E7E3D8] px-3 py-1 rounded-lg"
-                      >
-                        <FaPlus /> Add Semester
-                      </button>
-                    )}
-                    {formData.academicInfo?.university?.examSystem ===
-                      "yearly" && (
-                      <button
-                        onClick={() => setShowAddYearModal(true)}
-                        className="flex items-center gap-1 text-[#994D35] hover:text-[#D3A16D] transition-colors text-sm bg-[#E7E3D8] px-3 py-1 rounded-lg"
-                      >
-                        <FaPlus /> Add Year
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* University Section */}
-              <div className="mb-6">
+              <div id="profile-university" className="mb-6">
                 <h4 className="font-semibold text-[#3D444C] mb-3 flex items-center gap-2">
                   <FaUniversity className="text-[#994D35]" />
                   University/College
@@ -1555,12 +1651,36 @@ const ProfileClient = () => {
                 </div>
               </div>
 
+              {isEditing && (
+                <div className="flex gap-2">
+                  {formData.academicInfo?.university?.examSystem ===
+                    "semester" && (
+                    <button
+                      onClick={() => setShowAddSemesterModal(true)}
+                      className="flex items-center gap-1 text-[#994D35] hover:text-[#D3A16D] transition-colors text-sm bg-[#E7E3D8] px-3 py-1 rounded-lg"
+                    >
+                      <FaPlus /> Add Semester
+                    </button>
+                  )}
+                  {formData.academicInfo?.university?.examSystem ===
+                    "yearly" && (
+                    <button
+                      onClick={() => setShowAddYearModal(true)}
+                      className="flex items-center gap-1 text-[#994D35] hover:text-[#D3A16D] transition-colors text-sm bg-[#E7E3D8] px-3 py-1 rounded-lg"
+                    >
+                      <FaPlus /> Add Year
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Semester Results */}
               {formData.academicInfo?.university?.examSystem === "semester" && (
                 <div className="mb-6">
                   <h4 className="font-semibold text-[#3D444C] mb-3">
                     Semester Results
                   </h4>
+
                   {formData.academicInfo?.university?.semesters?.length > 0 ? (
                     formData.academicInfo.university.semesters.map(
                       (semester, index) => (
@@ -1734,7 +1854,7 @@ const ProfileClient = () => {
               )}
 
               {/* SSC Section */}
-              <div className="mb-6">
+              <div id="profile-ssc" className="mb-6">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold text-[#3D444C] flex items-center gap-2">
                     <FaBook className="text-[#994D35]" />
@@ -1808,7 +1928,7 @@ const ProfileClient = () => {
               </div>
 
               {/* HSC Section */}
-              <div>
+              <div id="profile-hsc">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold text-[#3D444C] flex items-center gap-2">
                     <FaBook className="text-[#994D35]" />
@@ -1883,7 +2003,10 @@ const ProfileClient = () => {
             </div>
 
             {/* Skills & Interests */}
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div
+              id="profile-skills"
+              className="bg-white rounded-2xl shadow-xl p-6"
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <FaCode className="text-[#994D35] text-xl" />
@@ -1957,7 +2080,10 @@ const ProfileClient = () => {
             </div>
 
             {/* Experience & Activities */}
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div
+              id="profile-experience"
+              className="bg-white rounded-2xl shadow-xl p-6"
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <FaBriefcase className="text-[#994D35] text-xl" />
@@ -2054,7 +2180,10 @@ const ProfileClient = () => {
             </div>
 
             {/* Achievements (user-editable) */}
-            <div className="bg-white rounded-2xl shadow-xl p-6">
+            <div
+              id="profile-achievements"
+              className="bg-white rounded-2xl shadow-xl p-6"
+            >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <FaTrophy className="text-[#994D35] text-xl" />
@@ -2363,7 +2492,7 @@ const ProfileClient = () => {
                   <button
                     onClick={handleCancel}
                     disabled={isSaving}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white/10 text-[#E7E3D8] px-5 py-3 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium disabled:opacity-50"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white/10 text-[#E7E3D8] px-3 py-2 md:px-5 md:py-3 rounded-xl hover:bg-white/20 transition-all duration-300 font-medium disabled:opacity-50"
                   >
                     <FaTimes />
                     <span>Cancel</span>
@@ -2371,7 +2500,7 @@ const ProfileClient = () => {
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-[#D3A16D] to-[#994D35] text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-[#D3A16D] to-[#994D35] text-white px-3 py-2 md:px-5 md:py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {isSaving ? (
                       <>
@@ -2381,7 +2510,7 @@ const ProfileClient = () => {
                     ) : (
                       <>
                         <FaSave />
-                        <span>Save Changes</span>
+                        <span>Save</span>
                       </>
                     )}
                   </button>

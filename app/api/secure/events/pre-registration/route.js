@@ -41,9 +41,10 @@ export async function GET(request) {
       );
     }
 
-    // Get event with pre-registered users
     const event = await Event.findById(eventId)
-      .select("eventTitle preRegistrationRequired preRegistrationDeadline preRegistrationUsers")
+      .select(
+        "eventTitle preRegistrationRequired preRegistrationDeadline preRegistrationUsers",
+      )
       .lean();
 
     if (!event) {
@@ -53,13 +54,13 @@ export async function GET(request) {
       );
     }
 
-    // Get all active users (excluding modarator and alumni)
+    // ✅ Add membershipId + phone to the selected fields
     const users = await User.find({
       isActive: true,
       role: { $nin: ["modarator", "alumni"] },
     })
       .select(
-        "fullName email studentId department role personalInfo.profilePicture",
+        "fullName email phone studentId membershipId department role personalInfo.profilePicture",
       )
       .sort({ fullName: 1 })
       .lean();
@@ -120,13 +121,12 @@ export async function POST(request) {
         { status: 404 },
       );
 
-    // Overwrite the pre-registration list
     event.preRegistrationUsers = preRegistrationUsers.map((u) => ({
-      userId: u.userId || undefined, // optional for external
+      userId: u.userId || undefined,
       name: u.name || "",
       email: u.email || "",
       phone: (u.phone || "").replace(/\D/g, "").slice(0, 11),
-      institution: u.institution || "", // ✅ include institution
+      institution: u.institution || "",
       identificationNo: u.identificationNo || "",
     }));
 

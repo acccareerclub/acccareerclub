@@ -1,7 +1,7 @@
 // app/dashboard/events/PreRegistrationModal.jsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   FaTimes,
   FaSearch,
@@ -13,12 +13,39 @@ import {
   FaTrash,
   FaUsers,
   FaBuilding,
+  FaUserCircle,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import Image from "next/image";
 
-const AVATAR_FALLBACK =
-  "https://res.cloudinary.com/ffuatrrt/image/upload/v1784889142/default-avatar.png";
+// Reusable avatar: profile picture if valid, otherwise a React user icon
+const UserAvatar = ({ src, alt = "User", size = 48, className = "" }) => {
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImage = src && !imgFailed;
+
+  return (
+    <div
+      className={`relative rounded-full overflow-hidden bg-[#E7E3D8] flex items-center justify-center shrink-0 ${className}`}
+      style={{ width: size, height: size }}
+    >
+      {showImage ? (
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          className="object-cover"
+          sizes={`${size}px`}
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        <FaUserCircle
+          className="text-[#994D35]"
+          style={{ fontSize: size * 0.82 }}
+        />
+      )}
+    </div>
+  );
+};
 
 const PreRegistrationModal = ({ event, onClose, onSaved }) => {
   const [users, setUsers] = useState([]);
@@ -28,7 +55,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [initialIds, setInitialIds] = useState([]);
 
-  // External (manual) entries — not from User collection
+  // External (manual) entries
   const [externalUsers, setExternalUsers] = useState([]);
   const [showExternalForm, setShowExternalForm] = useState(false);
   const [externalForm, setExternalForm] = useState({
@@ -39,6 +66,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
     identificationNo: "",
   });
 
+  // ---------- Fetch ----------
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -49,9 +77,8 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
       const data = await res.json();
 
       if (data.success) {
-        setUsers(data.users);
+        setUsers(data.users || []);
 
-        // Pre-select users already in pre-registration
         const preselected = [];
         const preExternal = [];
 
@@ -63,7 +90,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
               name: u.name || "",
               email: u.email || "",
               phone: u.phone || "",
-              institution: u.institution || "", // ✅ include institution
+              institution: u.institution || "",
               identificationNo: u.identificationNo || "",
             });
           }
@@ -73,7 +100,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
         setInitialIds(preselected);
         setExternalUsers(preExternal);
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Failed to load data");
       }
     } catch {
       toast.error("Failed to load data");
@@ -84,7 +111,15 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ---------- Helpers ----------
+  const userMap = useMemo(() => {
+    const m = new Map();
+    users.forEach((u) => m.set(u._id.toString(), u));
+    return m;
+  }, [users]);
 
   const toggleUser = (id) => {
     setSelectedIds((prev) =>
@@ -92,17 +127,43 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
     );
   };
 
-  const filteredUsers = users.filter((u) => {
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
-    return (
-      u.fullName?.toLowerCase().includes(term) ||
-      u.studentId?.toLowerCase().includes(term) ||
-      u.email?.toLowerCase().includes(term) ||
-      u.department?.toLowerCase().includes(term)
-    );
-  });
+  const term = searchTerm.toLowerCase().trim();
+  const isSearching = term.length >= 2;
 
+  // Filter matches — searched by name / email / studentId / membershipId / phone / department
+  const searchMatches = useMemo(() => {
+    if (!isSearching) return [];
+    return users.filter((u) => {
+      return (
+        u.fullName?.toLowerCase().includes(term) ||
+        u.email?.toLowerCase().includes(term) ||
+        u.studentId?.toLowerCase().includes(term) ||
+        u.membershipId?.toLowerCase().includes(term) ||
+        u.phone?.toLowerCase().includes(term) ||
+        u.department?.toLowerCase().includes(term)
+      );
+    });
+  }, [users, term, isSearching]);
+
+  // ✅ Default list = only those currently selected (pre-registered)
+  //    When searching, show matching users instead
+  const displayList = useMemo(() => {
+    if (isSearching) {
+      // sort: unselected first, then selected (keeps "add candidates" at top)
+      return [...searchMatches].sort((a, b) => {
+        const aSel = selectedIds.includes(a._id.toString());
+        const bSel = selectedIds.includes(b._id.toString());
+        if (aSel === bSel) return 0;
+        return aSel ? 1 : -1;
+      });
+    }
+    // No search → pre-registered only (map IDs to full user objects)
+    return selectedIds
+      .map((id) => userMap.get(id))
+      .filter(Boolean);
+  }, [isSearching, searchMatches, selectedIds, userMap]);
+
+  // ---------- External add ----------
   const addExternalUser = () => {
     if (!externalForm.name.trim()) {
       return toast.error("Name is required for external participants");
@@ -135,28 +196,27 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
     setExternalUsers((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // ---------- Save ----------
   const handleSave = async () => {
     setSubmitting(true);
     try {
       const preRegistrationUsers = [
-        // Selected internal users
         ...selectedIds.map((id) => {
-          const u = users.find((x) => x._id.toString() === id);
+          const u = userMap.get(id);
           return {
             userId: id,
             name: u?.fullName || "",
             email: u?.email || "",
             phone: u?.phone || "",
-            institution: u?.department || "", // internal: use department as institution
+            institution: u?.department || "",
             identificationNo: u?.studentId || "",
           };
         }),
-        // External manual users
         ...externalUsers.map((e) => ({
           name: e.name,
           email: e.email,
           phone: e.phone || "",
-          institution: e.institution, // ✅ include institution
+          institution: e.institution,
           identificationNo: e.identificationNo,
         })),
       ];
@@ -225,13 +285,22 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, ID, or email..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#3D444C]/20 rounded-lg focus:outline-none focus:border-[#3D444C] text-sm"
+              placeholder="Search by name, email, student ID, membership ID, phone…"
+              className="w-full pl-10 pr-10 py-2.5 bg-white border border-[#3D444C]/20 rounded-lg focus:outline-none focus:border-[#3D444C] text-sm"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md hover:bg-[#E7E3D8] text-[#3D444C]/60 hover:text-[#3D444C]"
+                title="Clear search"
+              >
+                <FaTimes className="text-xs" />
+              </button>
+            )}
           </div>
           <button
             onClick={() => setShowExternalForm(true)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 border border-[#994D35] text-[#994D35] rounded-lg hover:bg-[#3D444C] transition-colors font-medium text-sm"
+            className="flex items-center justify-center gap-2 px-5 py-2.5 border border-[#994D35] text-[#994D35] rounded-lg hover:bg-[#3D444C] hover:text-white transition-colors font-medium text-sm"
           >
             <FaUserPlus /> Add External
           </button>
@@ -243,18 +312,10 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
         {/* Stats */}
         <div className="bg-white rounded-2xl border border-[#3D444C]/10 p-4 mb-6 flex flex-wrap items-center gap-4 justify-between shadow-sm">
           <div className="flex items-center gap-4 text-sm flex-wrap">
-            <span className="flex items-center gap-2 text-[#3D444C]/70">
-              <FaUsers className="text-[#D3A16D]" />
-              <span className="font-semibold text-[#3D444C]">
-                {users.length}
-              </span>
-              eligible
-            </span>
-            <span className="text-[#3D444C]/20 hidden sm:block">|</span>
             <span className="flex items-center gap-2 text-[#994D35]">
               <FaUserCheck />
               <span className="font-semibold">{selectedIds.length}</span>
-              members
+              members pre-registered
             </span>
             <span className="text-[#3D444C]/20 hidden sm:block">|</span>
             <span className="flex items-center gap-2 text-purple-600">
@@ -262,6 +323,15 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
               <span className="font-semibold">{externalUsers.length}</span>
               external
             </span>
+            {isSearching && (
+              <>
+                <span className="text-[#3D444C]/20 hidden sm:block">|</span>
+                <span className="text-[#3D444C]/70">
+                  <span className="font-semibold">{searchMatches.length}</span>{" "}
+                  matching the search
+                </span>
+              </>
+            )}
           </div>
           {totalSelected > 0 && (
             <button
@@ -316,93 +386,136 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
           </div>
         )}
 
-        {/* Internal Users List */}
+        {/* Members List */}
         {loading ? (
           <div className="flex justify-center py-16">
             <FaSpinner className="animate-spin text-4xl text-[#3D444C]" />
           </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-[#3D444C]/10">
-            <FaUsers className="text-4xl text-[#3D444C]/30 mx-auto mb-3" />
-            <p className="text-[#3D444C]/60">No users found</p>
-          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {filteredUsers.map((u) => {
-              const idStr = u._id.toString();
-              const isSelected = selectedIds.includes(idStr);
-              const wasSelected = initialIds.includes(idStr);
-              return (
-                <button
-                  key={u._id}
-                  onClick={() => toggleUser(idStr)}
-                  className={`text-left p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative ${
-                    isSelected && wasSelected
-                      ? "bg-green-500 text-white border-green-600 shadow-md"
-                      : isSelected
-                        ? "bg-[#3D444C] text-[#E7E3D8] border-[#3D444C] shadow-md"
-                        : "bg-white text-[#3D444C] border-[#3D444C]/10 hover:border-[#D3A16D] hover:shadow-sm"
-                  }`}
-                >
-                  {wasSelected && (
-                    <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/25 text-[8px] font-bold tracking-wide">
-                      PRE
-                    </span>
-                  )}
+          <>
+            {/* Section label */}
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-bold text-[#3D444C]">
+                {isSearching
+                  ? `Search results (${displayList.length})`
+                  : `Pre-registered Members (${displayList.length})`}
+              </h3>
+              {isSearching && displayList.length > 0 && (
+                <span className="text-[11px] text-[#3D444C]/50 font-normal">
+                  click a user to add / remove
+                </span>
+              )}
+            </div>
 
-                  <div className="relative shrink-0">
-                    <div
-                      className={`relative w-12 h-12 rounded-full overflow-hidden border-2 ${
+            {displayList.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border border-[#3D444C]/10">
+                <FaUsers className="text-4xl text-[#3D444C]/30 mx-auto mb-3" />
+                <p className="text-[#3D444C]/60 text-sm">
+                  {isSearching
+                    ? `No users match "${searchTerm}"`
+                    : "No one is pre-registered yet. Use the search bar above to find and add members."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                {displayList.map((u) => {
+                  const idStr = u._id.toString();
+                  const isSelected = selectedIds.includes(idStr);
+                  const wasSelected = initialIds.includes(idStr);
+                  return (
+                    <button
+                      key={u._id}
+                      onClick={() => toggleUser(idStr)}
+                      className={`text-left p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative ${
                         isSelected && wasSelected
-                          ? "border-white"
+                          ? "bg-green-500 text-white border-green-600 shadow-md"
                           : isSelected
-                            ? "border-[#D3A16D]"
-                            : "border-[#3D444C]/10"
+                            ? "bg-[#3D444C] text-[#E7E3D8] border-[#3D444C] shadow-md"
+                            : "bg-white text-[#3D444C] border-[#3D444C]/10 hover:border-[#D3A16D] hover:shadow-sm"
                       }`}
                     >
-                      <Image
-                        src={u.personalInfo?.profilePicture || AVATAR_FALLBACK}
-                        alt={u.fullName}
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                      />
-                    </div>
-                    {isSelected && (
-                      <div
-                        className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
-                          wasSelected ? "bg-white" : "bg-[#D3A16D]"
-                        }`}
-                      >
-                        <FaCheck
-                          className={`text-[10px] ${
-                            wasSelected ? "text-green-600" : "text-[#3D444C]"
+                      {wasSelected && (
+                        <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/25 text-[8px] font-bold tracking-wide">
+                          PRE
+                        </span>
+                      )}
+
+                      <div className="relative shrink-0">
+                        <UserAvatar
+                          src={u.personalInfo?.profilePicture}
+                          alt={u.fullName}
+                          size={48}
+                          className={`border-2 ${
+                            isSelected && wasSelected
+                              ? "border-white"
+                              : isSelected
+                                ? "border-[#D3A16D]"
+                                : "border-[#3D444C]/10"
                           }`}
                         />
+                        {isSelected && (
+                          <div
+                            className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
+                              wasSelected ? "bg-white" : "bg-[#D3A16D]"
+                            }`}
+                          >
+                            <FaCheck
+                              className={`text-[10px] ${
+                                wasSelected
+                                  ? "text-green-600"
+                                  : "text-[#3D444C]"
+                              }`}
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`font-semibold text-sm truncate ${
-                        isSelected ? "text-white" : "text-[#3D444C]"
-                      }`}
-                    >
-                      {u.fullName}
-                    </p>
-                    <p
-                      className={`text-xs truncate ${
-                        isSelected ? "text-white/80" : "text-[#3D444C]/60"
-                      }`}
-                    >
-                      ID: {u.studentId || "N/A"}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p
+                            className={`font-semibold text-sm truncate ${
+                              isSelected ? "text-white" : "text-[#3D444C]"
+                            }`}
+                          >
+                            {u.fullName}
+                          </p>
+                          {u.membershipId && (
+                            <span
+                              className={`font-mono text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wider ${
+                                isSelected
+                                  ? "bg-white/20 text-white"
+                                  : "bg-[#D3A16D]/20 text-[#994D35] border border-[#D3A16D]/40"
+                              }`}
+                            >
+                              {u.membershipId}
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          className={`text-xs truncate ${
+                            isSelected ? "text-white/80" : "text-[#3D444C]/60"
+                          }`}
+                        >
+                          ID: {u.studentId || "N/A"}
+                        </p>
+                        {u.phone && (
+                          <p
+                            className={`text-[10px] truncate ${
+                              isSelected
+                                ? "text-white/70"
+                                : "text-[#3D444C]/50"
+                            }`}
+                          >
+                            📞 {u.phone}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -479,6 +592,7 @@ const PreRegistrationModal = ({ event, onClose, onSaved }) => {
                   setExternalForm({
                     name: "",
                     email: "",
+                    phone: "",
                     institution: "",
                     identificationNo: "",
                   });
