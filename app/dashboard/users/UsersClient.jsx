@@ -16,8 +16,6 @@ import {
   FaUserPlus,
   FaClock,
   FaSpinner,
-  FaToggleOn,
-  FaToggleOff,
   FaChevronDown,
   FaChevronRight,
   FaCrown,
@@ -73,8 +71,6 @@ const UserRow = ({
   roleColors,
   onVerify,
   verifyLoad,
-  onToggle,
-  onDelete,
   indentLevel = 0,
 }) => {
   const displayRole = roleLabels[user.role] || user.role || "Unknown";
@@ -193,24 +189,6 @@ const UserRow = ({
           <FaEye />
         </Link>
 
-        <button
-          onClick={() => onToggle(user)}
-          className={`p-2 rounded-lg transition-colors ${
-            user.isActive !== false
-              ? "text-orange-600 hover:bg-orange-50"
-              : "text-green-600 hover:bg-green-50"
-          }`}
-          title={
-            user.isActive !== false ? "Deactivate Account" : "Activate Account"
-          }
-        >
-          {user.isActive !== false ? (
-            <FaToggleOn className="text-xl" />
-          ) : (
-            <FaToggleOff className="text-xl" />
-          )}
-        </button>
-
         {!user.isVerified && (
           <button
             onClick={() => onVerify(user._id)}
@@ -225,14 +203,6 @@ const UserRow = ({
             )}
           </button>
         )}
-
-        <button
-          onClick={() => onDelete(user)}
-          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          title="Delete User"
-        >
-          <FaTrash />
-        </button>
       </div>
     </div>
   );
@@ -294,14 +264,8 @@ const UsersClient = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [filterRole, setFilterRole] = useState("all");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [deleteMessage, setDeleteMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showToggleModal, setShowToggleModal] = useState(false);
-  const [toggleUser, setToggleUser] = useState(null);
-  const [toggleReason, setToggleReason] = useState("");
-  const [toggleAction, setToggleAction] = useState(null);
   const [verifyLoad, setVerifyLoad] = useState(null);
   const [dynamicRoles, setDynamicRoles] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -416,73 +380,6 @@ const UsersClient = () => {
       toast.error("Failed to verify user");
     } finally {
       setVerifyLoad(null);
-    }
-  };
-
-  const handleToggleActive = async () => {
-    if (!toggleUser) return;
-    setIsProcessing(true);
-    try {
-      const response = await fetch("/api/secure/users/toggle-active", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: toggleUser._id,
-          isActive: toggleAction === "activate",
-          reason: toggleReason || "No reason provided",
-        }),
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.success(
-          toggleAction === "activate"
-            ? "Account activated successfully!"
-            : "Account deactivated successfully!",
-        );
-        setShowToggleModal(false);
-        setToggleUser(null);
-        setToggleReason("");
-        setToggleAction(null);
-        fetchUsers();
-      } else {
-        toast.error(data.message || "Failed to update account status");
-      }
-    } catch (error) {
-      toast.error("Failed to update account status");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedUser) return;
-    setIsProcessing(true);
-    try {
-      const response = await fetch("/api/secure/users", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: selectedUser._id,
-          action: "delete",
-          message: deleteMessage || "No reason provided",
-        }),
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        toast.success("User deleted successfully!");
-        setShowDeleteModal(false);
-        setSelectedUser(null);
-        setDeleteMessage("");
-        fetchUsers();
-      } else {
-        toast.error(data.message || "Failed to delete user");
-      }
-    } catch (error) {
-      toast.error("Failed to delete user");
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -991,15 +888,6 @@ const UsersClient = () => {
     roleColors,
     onVerify: handleVerify,
     verifyLoad,
-    onToggle: (user) => {
-      setToggleUser(user);
-      setToggleAction(user.isActive !== false ? "deactivate" : "activate");
-      setShowToggleModal(true);
-    },
-    onDelete: (user) => {
-      setSelectedUser(user);
-      setShowDeleteModal(true);
-    },
   };
 
   return (
@@ -1248,132 +1136,6 @@ const UsersClient = () => {
           )}
         </div>
       </div>
-
-      {/* Delete Modal */}
-      {showDeleteModal && selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold text-[#3D444C] mb-2">
-              Delete User
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete{" "}
-              <strong>{selectedUser.fullName}</strong>? This action cannot be
-              undone.
-            </p>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reason for deletion (optional):
-              </label>
-              <textarea
-                value={deleteMessage}
-                onChange={(e) => setDeleteMessage(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent"
-                rows="3"
-                placeholder="Enter reason for deletion..."
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setSelectedUser(null);
-                  setDeleteMessage("");
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isProcessing}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-              >
-                {isProcessing ? (
-                  <FaSpinner className="animate-spin mx-auto" />
-                ) : (
-                  "Delete"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toggle Modal */}
-      {showToggleModal && toggleUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold text-[#3D444C] mb-2">
-              {toggleAction === "activate" ? "Activate" : "Deactivate"} Account
-            </h2>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to{" "}
-              <strong>
-                {toggleAction === "activate" ? "activate" : "deactivate"}
-              </strong>{" "}
-              <strong>{toggleUser.fullName}</strong>'s account?
-              {toggleAction === "deactivate" && (
-                <span className="block mt-2 text-sm text-red-600">
-                  ⚠️ This will immediately log them out and prevent them from
-                  logging in.
-                </span>
-              )}
-              {toggleAction === "activate" && (
-                <span className="block mt-2 text-sm text-green-600">
-                  ✅ This will restore their access to the platform.
-                </span>
-              )}
-            </p>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reason for{" "}
-                {toggleAction === "activate" ? "activation" : "deactivation"}{" "}
-                (optional):
-              </label>
-              <textarea
-                value={toggleReason}
-                onChange={(e) => setToggleReason(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent"
-                rows="3"
-                placeholder={`Enter reason for ${
-                  toggleAction === "activate" ? "activation" : "deactivation"
-                }...`}
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowToggleModal(false);
-                  setToggleUser(null);
-                  setToggleReason("");
-                  setToggleAction(null);
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleToggleActive}
-                disabled={isProcessing}
-                className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
-                  toggleAction === "activate"
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "bg-red-600 hover:bg-red-700"
-                }`}
-              >
-                {isProcessing ? (
-                  <FaSpinner className="animate-spin mx-auto" />
-                ) : toggleAction === "activate" ? (
-                  "Activate"
-                ) : (
-                  "Deactivate"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <AddUserModal
         isOpen={showAddUserModal}

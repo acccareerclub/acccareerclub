@@ -376,7 +376,7 @@ export const sendWelcomeEmail = async ({
             <strong>Email:</strong> ${email}<br>
             <strong>Student ID:</strong> ${studentId}<br>
             <strong>Password:</strong> <span style="background: #f5f5f5; padding: 2px 8px; border-radius: 4px; font-family: monospace;">${password}</span><br>
-            <strong>Role:</strong> ${role.charAt(0).toUpperCase() + role.slice(1)}
+            <strong>Role:</strong> ${role.charAt(0).toUpperCase() + role.slice(1)}<br>
             ${
               membershipId
                 ? `<strong>Membership ID:</strong>${membershipId}<br>`

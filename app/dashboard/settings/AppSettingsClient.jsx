@@ -10,6 +10,7 @@ import {
   FaArrowRight,
   FaQrcode 
 } from "react-icons/fa";
+import { TiUserDelete } from "react-icons/ti";
 
 const AppSettingsClient = () => {
   // Settings items with icons, descriptions, and links
@@ -39,12 +40,12 @@ const AppSettingsClient = () => {
       link: "/dashboard/settings/qrgenerator",
     },
     {
-      id: "general",
-      title: "General Settings",
-      description: "Configure app-wide preferences and defaults.",
-      icon: FaCog,
+      id: "user-deletion-and-deactivation",
+      title: "User Deletion, Deactivation & Reactivation",
+      description: "Deactivate & Delete Users.",
+      icon: TiUserDelete,
       color: "#994D35",
-      link: "/dashboard/settings/general",
+      link: "/dashboard/settings/user-deletion-and-deactivation",
     },
   ];
 
