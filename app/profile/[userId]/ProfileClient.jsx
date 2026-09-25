@@ -1497,6 +1497,31 @@ const ProfileClient = () => {
                     </p>
                   )}
                 </div>
+                {/* Bio / About Me */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 italic mb-1">
+                    Bio / About Me
+                  </label>
+                  {isEditing ? (
+                    <textarea
+                      rows={4}
+                      value={formData.personalInfo?.bio || ""}
+                      onChange={(e) =>
+                        handleNestedInputChange(
+                          "personalInfo",
+                          "bio",
+                          e.target.value,
+                        )
+                      }
+                      placeholder="Write a short paragraph about yourself — your background, interests, what drives you, etc."
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent text-[#3D444C] bg-white resize-y"
+                    />
+                  ) : (
+                    <p className="text-[#3D444C] font-medium whitespace-pre-wrap">
+                      {user?.personalInfo?.bio || "Not provided"}
+                    </p>
+                  )}
+                </div>
               </div>
               {/* Address Information */}
               <div id="profile-address" className="mt-4">

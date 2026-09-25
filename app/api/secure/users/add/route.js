@@ -5,6 +5,7 @@ import User from "../../../../models/User";
 import { getCurrentUser, hashPassword } from "../../../../lib/authUtils";
 import { sendWelcomeEmail } from "../../../../lib/mailsystem";
 import { assignMembershipId } from "../../../../lib/membershipId";
+import { upsertSnapshot } from "../../../../lib/userSnapshot";
 
 export async function POST(request) {
   try {
@@ -171,6 +172,11 @@ export async function POST(request) {
 
     // ✅ Assign membership ID immediately (added by authority)
     const membershipResult = await assignMembershipId(user._id);
+    try {
+      await upsertSnapshot(user._id, decoded.userId || decoded.id);
+    } catch (snapErr) {
+      console.error("Snapshot on add failed:", snapErr);
+    }
     if (!membershipResult.success) {
       // Roll back — do not leave a half-created user without an ID
       await User.findByIdAndDelete(user._id);

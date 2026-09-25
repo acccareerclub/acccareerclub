@@ -37,7 +37,13 @@ const ClassicCVGenerator = ({ user }) => {
     const blocks = [];
 
     // ---- PROFILE SUMMARY ----
-    if (user?.careerClubInfo?.reasonToJoin) {
+    // ---- PROFILE SUMMARY ----
+    const bioText =
+      user?.personalInfo?.bio?.trim() ||
+      user?.careerClubInfo?.reasonToJoin?.trim() ||
+      "";
+
+    if (bioText) {
       blocks.push({
         id: "about",
         height: HEIGHTS.sectionTitle + HEIGHTS.profileSummary + 20,
@@ -47,7 +53,7 @@ const ClassicCVGenerator = ({ user }) => {
               Profile Summary
               <span className="st-line" />
             </div>
-            <p className="profile-text">{user.careerClubInfo.reasonToJoin}</p>
+            <p className="profile-text">{bioText}</p>
           </div>
         ),
       });
@@ -85,9 +91,7 @@ const ClassicCVGenerator = ({ user }) => {
                       <div className="exp-date">{club.duration || "—"}</div>
                     </div>
                     <div className="exp-right">
-                      <div className="exp-title">
-                        {club.clubName || "Club"}
-                      </div>
+                      <div className="exp-title">{club.clubName || "Club"}</div>
                       {club.position && (
                         <div className="exp-role">{club.position}</div>
                       )}
@@ -213,7 +217,9 @@ const ClassicCVGenerator = ({ user }) => {
                   {user?.academicInfo?.hscOrEquivalent?.result && (
                     <span>
                       Result:{" "}
-                      <strong>{user.academicInfo.hscOrEquivalent.result}</strong>
+                      <strong>
+                        {user.academicInfo.hscOrEquivalent.result}
+                      </strong>
                     </span>
                   )}
                 </div>
@@ -247,7 +253,9 @@ const ClassicCVGenerator = ({ user }) => {
                   {user?.academicInfo?.sscOrEquivalent?.result && (
                     <span>
                       Result:{" "}
-                      <strong>{user.academicInfo.sscOrEquivalent.result}</strong>
+                      <strong>
+                        {user.academicInfo.sscOrEquivalent.result}
+                      </strong>
                     </span>
                   )}
                 </div>
@@ -278,9 +286,7 @@ const ClassicCVGenerator = ({ user }) => {
                   <div className="exp-date">{ach.date || "—"}</div>
                 </div>
                 <div className="exp-right">
-                  <div className="exp-title">
-                    {ach.title || "Achievement"}
-                  </div>
+                  <div className="exp-title">{ach.title || "Achievement"}</div>
                   <div className="exp-meta">
                     {ach.position && (
                       <span>
@@ -399,9 +405,7 @@ const ClassicCVGenerator = ({ user }) => {
             )}
             {user?.careerClubInfo?.careerProspectsOfDept && (
               <div className="career-box">
-                <div className="career-title">
-                  Career Prospects of My Field
-                </div>
+                <div className="career-title">Career Prospects of My Field</div>
                 <div className="career-text">
                   {user.careerClubInfo.careerProspectsOfDept}
                 </div>
@@ -821,9 +825,7 @@ const ClassicCVGenerator = ({ user }) => {
               {/* Header — only first page */}
               {pageIdx === 0 && (
                 <div className="header">
-                  <div className="name">
-                    {user?.fullName || "Unknown"}
-                  </div>
+                  <div className="name">{user?.fullName || "Unknown"}</div>
                   <div className="title">Curriculum Vitae</div>
                   <div className="contact">
                     {user?.email && <span>✉ {user.email}</span>}
@@ -852,9 +854,7 @@ const ClassicCVGenerator = ({ user }) => {
                   <div className="signature-block">
                     <div className="signature-inner">
                       <div className="signature-line" />
-                      <div className="signature-label">
-                        Student's Signature
-                      </div>
+                      <div className="signature-label">Student's Signature</div>
                     </div>
                   </div>
                 )}

@@ -37,7 +37,12 @@ const ModernCVGenerator = ({ user }) => {
   const buildMainBlocks = () => {
     const blocks = [];
 
-    if (user?.careerClubInfo?.reasonToJoin) {
+    const bioText =
+      user?.personalInfo?.bio?.trim() ||
+      user?.careerClubInfo?.reasonToJoin?.trim() ||
+      "";
+
+    if (bioText) {
       blocks.push({
         id: "about",
         height: HEIGHTS.sectionTitle + HEIGHTS.profileSummary + 20,
@@ -47,9 +52,7 @@ const ModernCVGenerator = ({ user }) => {
               <span className="st-bar" />
               Profile
             </div>
-            <div className="profile-summary">
-              {user.careerClubInfo.reasonToJoin}
-            </div>
+            <div className="profile-summary">{bioText}</div>
           </div>
         ),
       });
@@ -388,9 +391,7 @@ const ModernCVGenerator = ({ user }) => {
             )}
             {user?.careerClubInfo?.careerProspectsOfDept && (
               <div className="career-box">
-                <div className="career-title">
-                  Career Prospects of My Field
-                </div>
+                <div className="career-title">Career Prospects of My Field</div>
                 <div className="career-text">
                   {user.careerClubInfo.careerProspectsOfDept}
                 </div>
@@ -565,10 +566,7 @@ const ModernCVGenerator = ({ user }) => {
       });
     }
 
-    if (
-      user?.guardianInfo?.father?.name ||
-      user?.guardianInfo?.mother?.name
-    ) {
+    if (user?.guardianInfo?.father?.name || user?.guardianInfo?.mother?.name) {
       rail.push({
         id: "family",
         jsx: (
@@ -994,7 +992,10 @@ const ModernCVGenerator = ({ user }) => {
                           {user?.fullName || "Unknown"}
                         </div>
                         <div className="rail-role">Curriculum Vitae</div>
-                        <div className="rail-divider" style={{ marginTop: 10 }} />
+                        <div
+                          className="rail-divider"
+                          style={{ marginTop: 10 }}
+                        />
                       </div>
 
                       {railBlocks.map((b) => b.jsx)}

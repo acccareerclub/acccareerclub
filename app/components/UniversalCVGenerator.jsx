@@ -44,16 +44,19 @@ const UniversalCVGenerator = ({ user }) => {
     const blocks = [];
 
     // ---- Profile / About ----
-    if (user?.careerClubInfo?.reasonToJoin) {
+    const bioText =
+      user?.personalInfo?.bio?.trim() ||
+      user?.careerClubInfo?.reasonToJoin?.trim() ||
+      "";
+
+    if (bioText) {
       blocks.push({
         id: "about",
         height: HEIGHTS.sectionTitle + HEIGHTS.profileSummary + 20,
         jsx: (
           <div className="section" key="about">
             <div className="section-title">Profile</div>
-            <div className="profile-summary">
-              {user.careerClubInfo.reasonToJoin}
-            </div>
+            <div className="profile-summary">{bioText}</div>
           </div>
         ),
       });
@@ -286,9 +289,7 @@ const UniversalCVGenerator = ({ user }) => {
                   <div className="timeline-title">
                     {ach.title || "Achievement"}
                   </div>
-                  {ach.date && (
-                    <div className="timeline-date">{ach.date}</div>
-                  )}
+                  {ach.date && <div className="timeline-date">{ach.date}</div>}
                 </div>
                 <div className="timeline-meta">
                   {ach.position && (
@@ -328,9 +329,7 @@ const UniversalCVGenerator = ({ user }) => {
                     {ach.eventName || "Club Achievement"}
                     <span className="club-badge">ACC Career Club</span>
                   </div>
-                  {ach.date && (
-                    <div className="timeline-date">{ach.date}</div>
-                  )}
+                  {ach.date && <div className="timeline-date">{ach.date}</div>}
                 </div>
                 <div className="timeline-meta">
                   {ach.position && (
@@ -407,9 +406,7 @@ const UniversalCVGenerator = ({ user }) => {
 
             {user?.careerClubInfo?.careerProspectsOfDept && (
               <div className="career-box">
-                <div className="career-title">
-                  Career Prospects of My Field
-                </div>
+                <div className="career-title">Career Prospects of My Field</div>
                 <div className="career-text">
                   {user.careerClubInfo.careerProspectsOfDept}
                 </div>
@@ -465,9 +462,7 @@ const UniversalCVGenerator = ({ user }) => {
             {user?.personalInfo?.maritalStatus && (
               <div className="info-line">
                 <span className="label">Marital Status</span>
-                <span className="value">
-                  {user.personalInfo.maritalStatus}
-                </span>
+                <span className="value">{user.personalInfo.maritalStatus}</span>
               </div>
             )}
             {user?.personalInfo?.presentAddress && (
@@ -589,9 +584,7 @@ const UniversalCVGenerator = ({ user }) => {
             {user?.guardianInfo?.father?.name && (
               <div className="info-line">
                 <span className="label">Father</span>
-                <span className="value">
-                  {user.guardianInfo.father.name}
-                </span>
+                <span className="value">{user.guardianInfo.father.name}</span>
                 {user.guardianInfo.father.occupation && (
                   <span
                     style={{
@@ -608,9 +601,7 @@ const UniversalCVGenerator = ({ user }) => {
             {user?.guardianInfo?.mother?.name && (
               <div className="info-line">
                 <span className="label">Mother</span>
-                <span className="value">
-                  {user.guardianInfo.mother.name}
-                </span>
+                <span className="value">{user.guardianInfo.mother.name}</span>
                 {user.guardianInfo.mother.occupation && (
                   <span
                     style={{

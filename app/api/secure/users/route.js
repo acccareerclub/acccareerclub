@@ -7,6 +7,7 @@ import DynamicRole from "../../../models/DynamicRole";
 import { getCurrentUser } from "../../../lib/authUtils";
 import { sendVerificationSuccessEmail } from "../../../lib/mailsystem";
 import { assignMembershipId } from "../../../lib/membershipId";
+import { upsertSnapshot } from "../../../lib/userSnapshot";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -258,6 +259,12 @@ export async function PUT(request) {
     if (action === "verify") {
       user.isVerified = true;
       await user.save();
+      try {
+        await upsertSnapshot(user._id, decoded.userId || decoded.id);
+      } catch (snapErr) {
+        console.error("Snapshot failed:", snapErr);
+        // non-fatal — verification still succeeded
+      }
 
       // ✅ Assign a membership ID if the user doesn't have one yet
       let finalMembershipId = user.membershipId;

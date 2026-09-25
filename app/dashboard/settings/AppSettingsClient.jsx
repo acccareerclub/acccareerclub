@@ -47,6 +47,14 @@ const AppSettingsClient = () => {
       color: "#994D35",
       link: "/dashboard/settings/user-deletion-and-deactivation",
     },
+    {
+      id: "user-data-changes",
+      title: "User Data Backup",
+      description: "Backup and manage user data.",
+      icon: TiUserDelete,
+      color: "#994D35",
+      link: "/dashboard/settings/user-data-changes",
+    },
   ];
 
   return (

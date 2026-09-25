@@ -15,7 +15,6 @@
   --font-cormorant: var(--font-cormorant), serif;
 }
 
-
 body {
   background: #ededed;
   color: #0a0a0a;
@@ -46,5 +45,64 @@ body {
   to {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+/* ============================================
+   Shimmer skeleton + fade-in animations
+   ============================================ */
+
+/* Shimmer bar — used for loading placeholders */
+.shimmer-bar {
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e9e5dc 0%, #f4f1ea 40%, #e9e5dc 80%);
+  background-size: 200% 100%;
+  animation: shimmerMove 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmerMove {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Fade-in used for rows and detail panels that mount after loading */
+.fade-in {
+  animation: fadeInUp 0.28s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Optional: fade-out when removing a row after accepting (unused now,
+   but handy if you later add optimistic removal) */
+.fade-out {
+  animation: fadeOut 0.22s ease-in forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    max-height: 400px;
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin: 0;
   }
 }
