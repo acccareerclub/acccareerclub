@@ -43,7 +43,7 @@ const computeCompletion = (user) => {
       key: "personalAddress",
       label: "Address Info",
       weight: 4,
-      scrollTo: "profile-personal",
+      scrollTo: "profile-address",
       check: () =>
         !!user.personalInfo?.presentAddress &&
         !!user.personalInfo?.permanentAddress,
@@ -286,10 +286,7 @@ const ProfileCompletionBar = ({ user, onJumpTo }) => {
     [user],
   );
 
-  const feedback = useMemo(
-    () => getFeedback(percentage),
-    [percentage],
-  );
+  const feedback = useMemo(() => getFeedback(percentage), [percentage]);
 
   const FeedbackIcon = feedback.icon;
 

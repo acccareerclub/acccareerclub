@@ -62,6 +62,7 @@ export async function GET(request, { params }) {
         email: user.email,
         phone: user.phone,
         studentId: user.studentId,
+        membershipId: user.membershipId,
         department: user.department,
         role: user.role,
         isVerified: user.isVerified,

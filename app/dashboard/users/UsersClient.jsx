@@ -30,6 +30,7 @@ import Link from "next/link";
 import DashboardMenu from "../../components/layout/DashboardMenu";
 import Image from "next/image";
 import AddUserModal from "../../components/AddUserModal";
+import CompactProgressRing from "@/app/components/CompactProgressRing";
 
 // Core role labels
 const CORE_ROLE_LABELS = {
@@ -81,6 +82,10 @@ const UserRow = ({
       ? ` (${roleLabels[user.executiveBranch] || user.executiveBranch})`
       : "";
 
+  // ✅ Hide ring for moderators (both spellings)
+  const isModerator =
+    user.role === "modarator" || user.role === "moderator";
+
   return (
     <div
       className={`flex flex-col sm:flex-row sm:items-center gap-3 bg-white border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-md transition-all ${
@@ -115,6 +120,9 @@ const UserRow = ({
                 {user.membershipId}
               </span>
             )}
+
+            {/* ✅ Compact progress ring — hidden for moderators */}
+            {!isModerator && <CompactProgressRing user={user} />}
           </div>
 
           <p className="text-xs sm:text-sm text-gray-500 truncate">

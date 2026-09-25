@@ -46,6 +46,8 @@ import CVGenerator from "../../components/CVGenerator";
 import UniversalCVGenerator from "../../components/UniversalCVGenerator";
 import ExperienceModal from "../../components/ExperienceModal";
 import AchievementsModal from "../../components/AchievementsModal";
+import ModernCVGenerator from "../../components/ModernCVGenerator";
+import ClassicCVGenerator from "../../components/ClassicCVGenerator";
 
 // Department options (same as signup)
 const DEPARTMENTS = [
@@ -145,6 +147,12 @@ const ProfileClient = () => {
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [showClubAchievementsModal, setShowClubAchievementsModal] =
     useState(false);
+  const [sameAsPresent, setSameAsPresent] = useState(false);
+  const [signatureOptions, setSignatureOptions] = useState({
+    teacher: false, // left
+    coModerator: false, // middle
+    moderator: false, // right
+  });
 
   // Fetch user data
   useEffect(() => {
@@ -330,6 +338,44 @@ const ProfileClient = () => {
         [field]: value,
       },
     });
+  };
+
+  const handlePresentAddressChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      personalInfo: {
+        ...prev.personalInfo,
+        presentAddress: value,
+        // If "same as present" is ticked, mirror the value live
+        permanentAddress: sameAsPresent
+          ? value
+          : prev.personalInfo?.permanentAddress || "",
+      },
+    }));
+  };
+
+  const handlePermanentAddressChange = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      personalInfo: {
+        ...prev.personalInfo,
+        permanentAddress: value,
+      },
+    }));
+  };
+
+  const handleToggleSameAsPresent = (checked) => {
+    setSameAsPresent(checked);
+    if (checked) {
+      // Copy present → permanent immediately
+      setFormData((prev) => ({
+        ...prev,
+        personalInfo: {
+          ...prev.personalInfo,
+          permanentAddress: prev.personalInfo?.presentAddress || "",
+        },
+      }));
+    }
   };
 
   const handleDeepNestedInputChange = (section, subsection, field, value) => {
@@ -737,14 +783,22 @@ const ProfileClient = () => {
     });
   };
 
-  const handleDownloadUniversalCV = () => {
+  const downloadCV = (format) => {
     if (!user) {
       toast.error("Profile not loaded");
       return;
     }
 
+    const componentMap = {
+      universal: UniversalCVGenerator,
+      modern: ModernCVGenerator,
+      classic: ClassicCVGenerator,
+    };
+
+    const Generator = componentMap[format] || UniversalCVGenerator;
+
     const cvHTML = ReactDOMServer.renderToStaticMarkup(
-      <UniversalCVGenerator user={user} />,
+      <Generator user={user} />,
     );
 
     const printWindow = window.open("", "_blank");
@@ -765,7 +819,7 @@ const ProfileClient = () => {
     }
 
     const cvHTML = ReactDOMServer.renderToStaticMarkup(
-      <CVGenerator user={user} />,
+      <CVGenerator user={user} signatures={signatureOptions} />,
     );
 
     const printWindow = window.open("", "_blank");
@@ -876,7 +930,12 @@ const ProfileClient = () => {
             <div className="flex gap-3">
               {!isEditing ? (
                 <button
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => {
+                    const p = user?.personalInfo?.presentAddress || "";
+                    const q = user?.personalInfo?.permanentAddress || "";
+                    setSameAsPresent(!!p && p === q);
+                    setIsEditing(true);
+                  }}
                   className="flex items-center gap-2 bg-[#994D35] text-white px-5 py-2.5 rounded-lg hover:bg-[#D3A16D] transition-all duration-300 hover:scale-105 shadow-md"
                 >
                   <FaEdit />
@@ -919,7 +978,7 @@ const ProfileClient = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Profile Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden sticky top-8">
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden sticky top-[2px]">
               <div
                 id="profile-photo"
                 className="h-24 sm:h-32 bg-gradient-to-r from-[#3D444C] to-[#994D35] relative"
@@ -978,7 +1037,7 @@ const ProfileClient = () => {
                 </div>
               </div>
 
-              <div className="pt-14 sm:pt-16 pb-6 px-4 text-center">
+              <div className="pt-14 sm:pt-16 pb-1 px-4 text-center">
                 <h2 className="text-xl sm:text-2xl font-bold text-[#3D444C]">
                   {user?.fullName}
                 </h2>
@@ -1051,11 +1110,93 @@ const ProfileClient = () => {
                 {["itsecretary", "prefect", "assistant_prefect"].includes(
                   authUser?.role,
                 ) && (
-                  <button
-                    type="button"
-                    onClick={handleDownloadProfile}
-                    className="w-full flex items-center justify-center gap-3 bg-[#3D444C] text-[#E7E3D8] px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] hover:bg-[#994D35] transition-all duration-300 group cursor-pointer"
-                  >
+                  <>
+                    {/* Signature options — only for admin roles who see the Official download */}
+                    {["itsecretary", "prefect", "assistant_prefect"].includes(
+                      authUser?.role,
+                    ) && (
+                      <div className="bg-[#F5F2EA] border border-[#D3A16D] rounded-xl p-3">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-[#994D35] mb-2">
+                          Signature Fields (optional)
+                        </p>
+
+                        <div className="space-y-1.5">
+                          {/* Left */}
+                          <label className="flex items-center gap-2 text-xs font-semibold text-[#3D444C] cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={signatureOptions.teacher}
+                              onChange={(e) =>
+                                setSignatureOptions((prev) => ({
+                                  ...prev,
+                                  teacher: e.target.checked,
+                                }))
+                              }
+                              className="w-4 h-4 accent-[#994D35]"
+                            />
+                            Club Teacher Member Signature (left)
+                          </label>
+
+                          {/* Middle */}
+                          <label className="flex items-center gap-2 text-xs font-semibold text-[#3D444C] cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={signatureOptions.coModerator}
+                              onChange={(e) =>
+                                setSignatureOptions((prev) => ({
+                                  ...prev,
+                                  coModerator: e.target.checked,
+                                }))
+                              }
+                              className="w-4 h-4 accent-[#994D35]"
+                            />
+                            Co-Moderator Signature (middle)
+                          </label>
+
+                          {/* Right */}
+                          <label className="flex items-center gap-2 text-xs font-semibold text-[#3D444C] cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={signatureOptions.moderator}
+                              onChange={(e) =>
+                                setSignatureOptions((prev) => ({
+                                  ...prev,
+                                  moderator: e.target.checked,
+                                }))
+                              }
+                              className="w-4 h-4 accent-[#994D35]"
+                            />
+                            Moderator Signature (right)
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleDownloadProfile}
+                      className="w-full flex items-center justify-center gap-3 bg-[#3D444C] text-[#E7E3D8] px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] hover:bg-[#994D35] transition-all duration-300 group cursor-pointer"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                      <span>Download Profile (Official)</span>
+                    </button>
+                  </>
+                )}
+
+                {/* CV Format Chooser */}
+                <details className="relative group">
+                  <summary className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-[#D3A16D] to-[#994D35] text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 cursor-pointer list-none">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -1066,34 +1207,52 @@ const ProfileClient = () => {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    <span>Download Profile (Official)</span>
-                  </button>
-                )}
+                    <span>Download CV</span>
+                    <svg
+                      className="w-4 h-4 group-open:rotate-180 transition-transform"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2.5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </summary>
 
-                {/* Universal CV — for everyone */}
-                <button
-                  type="button"
-                  onClick={handleDownloadUniversalCV}
-                  className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-[#D3A16D] to-[#994D35] text-white px-5 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group cursor-pointer"
-                >
-                  <svg
-                    className="w-5 h-5 group-hover:animate-bounce"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <span>Download CV</span>
-                </button>
+                  <div className="mt-2 space-y-1.5">
+                    <button
+                      type="button"
+                      onClick={() => downloadCV("universal")}
+                      className="w-full text-left flex items-center gap-3 bg-white border border-[#D3A16D] text-[#3D444C] px-4 py-2.5 rounded-lg hover:bg-[#E7E3D8] transition-colors text-sm font-semibold"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-[#994D35]" />
+                      Universal — Sidebar Right
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadCV("modern")}
+                      className="w-full text-left flex items-center gap-3 bg-white border border-[#D3A16D] text-[#3D444C] px-4 py-2.5 rounded-lg hover:bg-[#E7E3D8] transition-colors text-sm font-semibold"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-[#3D444C]" />
+                      Modern — Dark Left Rail
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadCV("classic")}
+                      className="w-full text-left flex items-center gap-3 bg-white border border-[#D3A16D] text-[#3D444C] px-4 py-2.5 rounded-lg hover:bg-[#E7E3D8] transition-colors text-sm font-semibold"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-[#8B7355]" />
+                      Classic — Single Column
+                    </button>
+                  </div>
+                </details>
               </div>
             </div>
           </div>
@@ -1337,6 +1496,84 @@ const ProfileClient = () => {
                       {user?.personalInfo?.maritalStatus || "Not provided"}
                     </p>
                   )}
+                </div>
+              </div>
+              {/* Address Information */}
+              <div id="profile-address" className="mt-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <FaBuilding className="text-[#994D35] text-xl" />
+                  <h3 className="text-xl font-bold text-[#3D444C]">
+                    Address Information
+                  </h3>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Present Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 italic mb-1">
+                      Present Address
+                    </label>
+                    {isEditing ? (
+                      <textarea
+                        rows={3}
+                        value={formData.personalInfo?.presentAddress || ""}
+                        onChange={(e) =>
+                          handlePresentAddressChange(e.target.value)
+                        }
+                        placeholder="House / Road / Area, City, Postal Code"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent text-[#3D444C] bg-white resize-y"
+                      />
+                    ) : (
+                      <p className="text-[#3D444C] font-medium whitespace-pre-wrap">
+                        {user?.personalInfo?.presentAddress || "Not provided"}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Permanent Address */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+                      <label className="block text-sm font-medium text-gray-400 italic">
+                        Permanent Address
+                      </label>
+
+                      {/* Checkbox only meaningful while editing */}
+                      {isEditing && (
+                        <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs text-[#3D444C] bg-[#E7E3D8] px-2.5 py-1 rounded-lg hover:bg-[#D3A16D]/30 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={sameAsPresent}
+                            onChange={(e) =>
+                              handleToggleSameAsPresent(e.target.checked)
+                            }
+                            className="w-4 h-4 accent-[#994D35]"
+                          />
+                          Same as Present Address
+                        </label>
+                      )}
+                    </div>
+
+                    {isEditing ? (
+                      <textarea
+                        rows={3}
+                        value={formData.personalInfo?.permanentAddress || ""}
+                        onChange={(e) =>
+                          handlePermanentAddressChange(e.target.value)
+                        }
+                        disabled={sameAsPresent}
+                        placeholder="House / Road / Area, City, Postal Code"
+                        className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent text-[#3D444C] bg-white resize-y ${
+                          sameAsPresent
+                            ? "bg-gray-100 text-gray-500 cursor-not-allowed opacity-70"
+                            : ""
+                        }`}
+                      />
+                    ) : (
+                      <p className="text-[#3D444C] font-medium whitespace-pre-wrap">
+                        {user?.personalInfo?.permanentAddress || "Not provided"}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
