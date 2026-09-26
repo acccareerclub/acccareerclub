@@ -1,40 +1,42 @@
 // app/components/EditEmailModal.jsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { FaTimes, FaEnvelope, FaCheckCircle, FaSpinner } from 'react-icons/fa';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { FaTimes, FaEnvelope, FaCheckCircle, FaSpinner } from "react-icons/fa";
+import { toast } from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 const EditEmailModal = ({ isOpen, onClose, currentEmail, userId }) => {
-  const [newEmail, setNewEmail] = useState('');
-  const [confirmEmail, setConfirmEmail] = useState('');
+  const [newEmail, setNewEmail] = useState("");
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const { user } = useAuth();
 
   useEffect(() => {
     if (isOpen) {
-      setNewEmail('');
-      setConfirmEmail('');
-      setError('');
+      setNewEmail("");
+      setConfirmEmail("");
+      setError("");
       setIsLoading(false);
     }
   }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     if (!newEmail || !confirmEmail) {
-      setError('Please fill in all fields');
-      toast.error('Please fill in all fields');
+      setError("Please fill in all fields");
+      toast.error("Please fill in all fields");
       setIsLoading(false);
       return;
     }
 
     if (newEmail === currentEmail) {
-      setError('New email is the same as current email');
-      toast.error('New email is the same as current email');
+      setError("New email is the same as current email");
+      toast.error("New email is the same as current email");
       setIsLoading(false);
       return;
     }
@@ -42,47 +44,54 @@ const EditEmailModal = ({ isOpen, onClose, currentEmail, userId }) => {
     // Basic email validation
     const emailRegex = /^\S+@\S+\.\S+$/;
     if (!emailRegex.test(newEmail)) {
-      setError('Please enter a valid email address');
-      toast.error('Please enter a valid email address');
+      setError("Please enter a valid email address");
+      toast.error("Please enter a valid email address");
       setIsLoading(false);
       return;
     }
 
     if (newEmail !== confirmEmail) {
-      setError('Emails do not match');
-      toast.error('Emails do not match');
+      setError("Emails do not match");
+      toast.error("Emails do not match");
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch('/api/users/update-email', {
-        method: 'PUT',
+      const response = await fetch("/api/users/update-email", {
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          userId, 
-          newEmail: newEmail.toLowerCase().trim() 
+        body: JSON.stringify({
+          userId,
+          newEmail: newEmail.toLowerCase().trim(),
         }),
-        credentials: 'include',
+        credentials: "include",
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Email updated successfully! You will be redirected to login.');
-        setTimeout(() => {
-          window.location.href = '/login?emailChanged=true';
-        }, 2000);
+        if (userId === user?.id) {
+          toast.success(
+            "Email updated successfully! You will be redirected to login.",
+          );
+          setTimeout(() => {
+            window.location.href = "/login?emailChanged=true";
+          }, 1500);
+        } else {
+          onClose();
+          toast.success("Email updated successfully!");
+        }
       } else {
-        setError(data.message || 'Failed to update email');
-        toast.error(data.message || 'Failed to update email');
+        setError(data.message || "Failed to update email");
+        toast.error(data.message || "Failed to update email");
       }
     } catch (error) {
-      console.error('Update email error:', error);
-      setError('Failed to update email. Please try again.');
-      toast.error('Failed to update email. Please try again.');
+      console.error("Update email error:", error);
+      setError("Failed to update email. Please try again.");
+      toast.error("Failed to update email. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -97,9 +106,7 @@ const EditEmailModal = ({ isOpen, onClose, currentEmail, userId }) => {
         <div className="bg-gradient-to-r from-[#3D444C] to-[#994D35] px-6 py-4 rounded-t-2xl flex justify-between items-center">
           <div>
             <h2 className="text-xl font-bold text-white">Change Email</h2>
-            <p className="text-white/80 text-sm">
-              Update your email address
-            </p>
+            <p className="text-white/80 text-sm">Update your email address</p>
           </div>
           <button
             onClick={onClose}
@@ -174,11 +181,14 @@ const EditEmailModal = ({ isOpen, onClose, currentEmail, userId }) => {
             </div>
           )}
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <p className="text-sm text-yellow-800">
-              ⚠️ Changing your email will require you to login again with your new email address.
-            </p>
-          </div>
+          {user?.id === userId && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-sm text-yellow-800">
+                ⚠️ Changing your email will require you to login again with your
+                new email address.
+              </p>
+            </div>
+          )}
 
           <button
             type="submit"

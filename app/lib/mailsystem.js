@@ -241,6 +241,13 @@ export const sendVerificationSuccessEmail = async (userData) => {
             Login and go to profile. Then complete your profile.
           </a>
         </div>
+        <div style="text-align: center; margin: 30px 0;">
+        <p> Or Visit: 
+          <a href="${process.env.NEXTAUTH_URL || "http://ccacc.vercel.app"}/login" 
+          ${process.env.NEXTAUTH_URL || "http://ccacc.vercel.app"}/login
+          </a> to login.
+          <p>
+        </div>
         
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
         

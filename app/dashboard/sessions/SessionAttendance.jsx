@@ -15,13 +15,12 @@ import {
   FaCheckCircle,
   FaHistory,
   FaPrint,
+  FaUserCircle,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-
-const AVATAR_FALLBACK =
-  "https://res.cloudinary.com/ffuatrrt/image/upload/v1790254660/default_avatar_ugedyd.avif";
+import Logo from "../../assets/logo/Careerclublogo.png";
 
 const SessionAttendance = ({ session, onClose, onSaved }) => {
   const [users, setUsers] = useState([]);
@@ -36,6 +35,12 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
 
   const html5QrCodeRef = useRef(null);
   const isScanningRef = useRef(false);
+  const selectedIdsRef = useRef(selectedIds);
+
+  // Keep a ref in sync so scanner callback sees latest selection
+  useEffect(() => {
+    selectedIdsRef.current = selectedIds;
+  }, [selectedIds]);
 
   // ---------- Fetch Users ----------
   const fetchUsers = async () => {
@@ -86,9 +91,18 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
   };
 
   // ---------- Filtered Users ----------
+  const hasSearchTerm = searchTerm.trim().length > 0;
+
   const filteredUsers = users.filter((u) => {
+    const idStr = u._id.toString();
+
+    // No search → only show currently selected members
+    if (!hasSearchTerm) {
+      return selectedIds.includes(idStr);
+    }
+
+    // With search → show all matching (selected + unselected)
     const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
     return (
       u.fullName?.toLowerCase().includes(term) ||
       u.studentId?.toLowerCase().includes(term) ||
@@ -167,7 +181,7 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
 
         if (matched) {
           const id = matched._id.toString();
-          if (!selectedIds.includes(id)) {
+          if (!selectedIdsRef.current.includes(id)) {
             setSelectedIds((prev) => [...prev, id]);
             toast.success(`${matched.fullName} marked present ✓`);
           } else {
@@ -194,7 +208,7 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
       toast.error("Could not start scanner. Check camera permissions.");
       setShowScanner(false);
     }
-  }, [users, selectedIds]);
+  }, [users]);
 
   const stopScanning = useCallback(async () => {
     if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
@@ -243,13 +257,29 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
   };
 
   // ============ PRINT ATTENDANCE LIST ============
-  const handlePrint = () => {
+  const handlePrint = async () => {
     const esc = (s) =>
       String(s ?? "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
+
+    // ✅ Convert imported logo to base64 data URL so it renders inside the iframe
+    let logoDataUrl = "";
+    try {
+      const logoRes = await fetch(Logo.src || Logo);
+      const logoBlob = await logoRes.blob();
+      logoDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(logoBlob);
+      });
+    } catch (err) {
+      console.error("Failed to load logo for print:", err);
+      // Continue without logo — print still works
+    }
 
     // Resolve phone from any plausible location on the user document
     const getMemberPhone = (u) =>
@@ -281,6 +311,7 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
       rows.push({
         name: u.fullName || "",
         studentId: u.studentId || "",
+        membershipId: u.membershipId || "",
         email: u.email || "",
         phone: fmtPhone(getMemberPhone(u)),
         department: u.department || "",
@@ -321,17 +352,18 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
         <td>
           <div class="name">${esc(r.name)}</div>
           <div class="sub">
-            ${
-              r.studentId
-                ? `<span class="tag">ID: ${esc(r.studentId)}</span>`
-                : ""
-            }
-            ${
-              r.isNew
-                ? `<span class="tag new">NEW</span>`
-                : `<span class="tag prev">PREVIOUSLY MARKED</span>`
-            }
-          </div>
+          ${
+            r.studentId
+              ? `<span class="tag">C.ID: ${esc(r.studentId)}</span>`
+              : ""
+          }
+          ${
+            r.membershipId
+              ? `<span class="tag">M.ID: ${esc(r.membershipId)}</span>`
+              : ""
+          }
+          ${r.isNew ? `<span class="tag new">NEW</span>` : ""}
+        </div>
         </td>
         <td>${esc(r.department || "—")}</td>
         <td class="contact">
@@ -345,15 +377,15 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
       .join("");
 
     const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<title>Attendance - ${esc(session.sessionTitle)}</title>
-<style>
-  @page { size: A4 portrait; margin: 12mm 10mm; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
+  <html lang="en">
+  <head>
+  <meta charset="utf-8" />
+  <title>Attendance - ${esc(session.sessionTitle)}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 10mm; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
       Helvetica, Arial, sans-serif;
     color: #3D444C;
@@ -361,11 +393,30 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
     padding: 0;
   }
 
-  .header {
-    text-align: center;
-    padding: 12pt 0 14pt;
-    border-bottom: 3px double #3D444C;
-    margin-bottom: 14pt;
+ .header {
+  text-align: center;
+  padding: 12pt 0 14pt;
+  border-bottom: 3px double #3D444C;
+  margin-bottom: 14pt;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14pt;
+    margin-bottom: 8pt;
+  }
+
+  .header-top .logo {
+    width: 60pt;
+    height: 60pt;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .header-top .header-text {
+    text-align: left;
   }
   .header .club {
     font-size: 22pt;
@@ -515,10 +566,19 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
 </head>
 <body>
   <div class="header">
-    <h1 class="club">ACC CAREER CLUB</h1>
-    <p class="subtitle">Adamjee Cantonment College</p>
-    <h2 class="doc-title">Session Attendance Sheet</h2>
+  <div class="header-top">
+    ${
+      logoDataUrl
+        ? `<img src="${logoDataUrl}" alt="ACC Career Club Logo" class="logo" />`
+        : ""
+    }
+    <div class="header-text">
+      <h1 class="club">ACC CAREER CLUB</h1>
+      <p class="subtitle">Adamjee Cantonment College</p>
+    </div>
   </div>
+  <h2 class="doc-title">Session Attendance Sheet</h2>
+</div>
 
   <div class="event-info">
     <table>
@@ -562,12 +622,10 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
   </div>
 
   <div class="summary">
-    <div class="chip">Total Attendees: <strong>${total}</strong></div>
-    <div class="chip">Newly Marked: <strong>${newCount}</strong></div>
-    <div class="chip">Previously Marked: <strong>${preCount}</strong></div>
-    <div class="chip">With Phone: <strong>${withPhone}</strong></div>
-    <div class="chip">With Email: <strong>${withEmail}</strong></div>
-  </div>
+  <div class="chip">Total Attendees: <strong>${total}</strong></div>
+  <div class="chip">With Phone: <strong>${withPhone}</strong></div>
+  <div class="chip">With Email: <strong>${withEmail}</strong></div>
+</div>
 
   ${
     rows.length === 0
@@ -706,8 +764,19 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name, ID, or email..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#3D444C]/20 rounded-lg focus:outline-none focus:border-[#3D444C] text-sm"
+              className="w-full pl-10 pr-10 py-2.5 bg-white border border-[#3D444C]/20 rounded-lg focus:outline-none focus:border-[#3D444C] text-sm"
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-[#3D444C]/50 hover:text-[#994D35] hover:bg-[#994D35]/10 transition-colors"
+                title="Clear search"
+                aria-label="Clear search"
+              >
+                <FaTimes className="text-sm" />
+              </button>
+            )}
           </div>
           <button
             onClick={() => setShowScanner(true)}
@@ -779,101 +848,139 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
         ) : filteredUsers.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-[#3D444C]/10">
             <FaUsers className="text-4xl text-[#3D444C]/30 mx-auto mb-3" />
-            <p className="text-[#3D444C]/60">No users found</p>
+            <p className="text-[#3D444C]/60">
+              {hasSearchTerm
+                ? "No users match your search"
+                : "No members marked yet. Search for a name, ID, or email to mark attendance."}
+            </p>
+            {!hasSearchTerm && selectedIds.length === 0 && (
+              <p className="text-xs text-[#3D444C]/40 mt-2">
+                Tip: scan an ID or search to find and mark members.
+              </p>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {filteredUsers.map((u) => {
-              const idStr = u._id.toString();
-              const isSelected = selectedIds.includes(idStr);
-              // ✅ Check if user was already marked BEFORE this session
-              const wasAlreadyMarked = initialAttendees.includes(idStr);
+          <div>
+            <h3 className="text-sm font-bold text-[#3D444C] mb-3 flex items-center gap-2">
+              <FaUserCheck className="text-[#994D35]" />
+              {hasSearchTerm ? (
+                <>
+                  Search Results
+                  <span className="text-[#3D444C]/50 font-normal">
+                    ({filteredUsers.length} matching)
+                  </span>
+                </>
+              ) : (
+                <>
+                  Marked Members
+                  <span className="text-[#3D444C]/50 font-normal">
+                    ({selectedIds.length} selected)
+                  </span>
+                </>
+              )}
+            </h3>
 
-              return (
-                <button
-                  key={u._id}
-                  onClick={() => toggleUser(idStr)}
-                  className={`text-left p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative ${
-                    isSelected && wasAlreadyMarked
-                      ? // 🟢 Already marked previously — GREEN
-                        "bg-green-500 text-white border-green-600 shadow-md"
-                      : isSelected
-                        ? // ⚫ Newly selected in this session — SLATE
-                          "bg-[#3D444C] text-[#E7E3D8] border-[#3D444C] shadow-md"
-                        : // ⚪ Not selected — WHITE
-                          "bg-white text-[#3D444C] border-[#3D444C]/10 hover:border-[#D3A16D] hover:shadow-sm"
-                  }`}
-                >
-                  {/* Small badge for pre-existing attendance */}
-                  {wasAlreadyMarked && (
-                    <span className="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/25 text-[8px] font-bold tracking-wide">
-                      <FaHistory className="text-[8px]" /> PRE
-                    </span>
-                  )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filteredUsers.map((u) => {
+                const idStr = u._id.toString();
+                const isSelected = selectedIds.includes(idStr);
+                const wasAlreadyMarked = initialAttendees.includes(idStr);
 
-                  {/* Avatar */}
-                  <div className="relative shrink-0">
-                    <div
-                      className={`relative w-12 h-12 rounded-full overflow-hidden border-2 ${
-                        isSelected && wasAlreadyMarked
-                          ? "border-white"
-                          : isSelected
-                            ? "border-[#D3A16D]"
-                            : "border-[#3D444C]/10"
-                      }`}
-                    >
-                      <Image
-                        src={u.personalInfo?.profilePicture || AVATAR_FALLBACK}
-                        alt={u.fullName}
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                      />
-                    </div>
-                    {isSelected && (
+                return (
+                  <button
+                    key={u._id}
+                    onClick={() => toggleUser(idStr)}
+                    className={`text-left p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative ${
+                      isSelected && wasAlreadyMarked
+                        ? "bg-green-500 text-white border-green-600 shadow-md"
+                        : isSelected
+                          ? "bg-[#3D444C] text-[#E7E3D8] border-[#3D444C] shadow-md"
+                          : "bg-white text-[#3D444C] border-[#3D444C]/10 hover:border-[#D3A16D] hover:shadow-sm"
+                    }`}
+                  >
+                    {/* Pre-existing badge — only when selected */}
+                    {isSelected && wasAlreadyMarked && (
+                      <span className="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/25 text-[8px] font-bold tracking-wide">
+                        <FaHistory className="text-[8px]" /> PRE
+                      </span>
+                    )}
+
+                    {/* Avatar */}
+                    <div className="relative shrink-0">
                       <div
-                        className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
-                          wasAlreadyMarked ? "bg-white" : "bg-[#D3A16D]"
+                        className={`relative w-12 h-12 rounded-full overflow-hidden border-2 flex items-center justify-center ${
+                          isSelected && wasAlreadyMarked
+                            ? "border-white"
+                            : isSelected
+                              ? "border-[#D3A16D]"
+                              : "border-[#3D444C]/10"
                         }`}
                       >
-                        <FaCheck
-                          className={`text-[10px] ${
-                            wasAlreadyMarked
-                              ? "text-green-600"
-                              : "text-[#3D444C]"
-                          }`}
-                        />
+                        {u.personalInfo?.profilePicture ? (
+                          <Image
+                            src={u.personalInfo.profilePicture}
+                            alt={u.fullName}
+                            fill
+                            className="object-cover"
+                            sizes="48px"
+                          />
+                        ) : (
+                          <FaUserCircle
+                            className={`text-3xl ${
+                              isSelected
+                                ? wasAlreadyMarked
+                                  ? "text-white"
+                                  : "text-[#E7E3D8]"
+                                : "text-[#3D444C]/40"
+                            }`}
+                          />
+                        )}
                       </div>
-                    )}
-                  </div>
+                      {isSelected && (
+                        <div
+                          className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
+                            wasAlreadyMarked ? "bg-white" : "bg-[#D3A16D]"
+                          }`}
+                        >
+                          <FaCheck
+                            className={`text-[10px] ${
+                              wasAlreadyMarked
+                                ? "text-green-600"
+                                : "text-[#3D444C]"
+                            }`}
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`font-semibold text-sm truncate ${
-                        isSelected ? "text-white" : "text-[#3D444C]"
-                      }`}
-                    >
-                      {u.fullName}
-                    </p>
-                    <p
-                      className={`text-xs truncate ${
-                        isSelected ? "text-white/80" : "text-[#3D444C]/60"
-                      }`}
-                    >
-                      ID: {u.studentId || "N/A"}
-                    </p>
-                    <p
-                      className={`text-[10px] truncate ${
-                        isSelected ? "text-white/70" : "text-[#3D444C]/50"
-                      }`}
-                    >
-                      {u.department || "N/A"}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`font-semibold text-sm truncate ${
+                          isSelected ? "text-white" : "text-[#3D444C]"
+                        }`}
+                      >
+                        {u.fullName}
+                      </p>
+                      <p
+                        className={`text-xs truncate ${
+                          isSelected ? "text-white/80" : "text-[#3D444C]/60"
+                        }`}
+                      >
+                        ID: {u.studentId || "N/A"}
+                      </p>
+                      <p
+                        className={`text-[10px] truncate ${
+                          isSelected ? "text-white/70" : "text-[#3D444C]/50"
+                        }`}
+                      >
+                        {u.department || "N/A"}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

@@ -18,13 +18,12 @@ import {
   FaBarcode,
   FaHistory,
   FaPrint,
+  FaUserCircle,
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-
-const AVATAR_FALLBACK =
-  "https://res.cloudinary.com/ffuatrrt/image/upload/v1790254660/default_avatar_ugedyd.avif";
+import Logo from "../../assets/logo/Careerclublogo.png";
 
 // Stable key for an external attendee (name + email or ID)
 const extKey = (e) =>
@@ -213,9 +212,18 @@ const AttendanceModal = ({ event, onClose, onSaved }) => {
     ? users
     : users.filter((u) => preRegistered.includes(u._id.toString()));
 
+  const hasSearchTerm = searchTerm.trim().length > 0;
+
   const filteredUsers = visibleUsers.filter((u) => {
+    const idStr = u._id.toString();
+
+    // No search → only show currently selected members
+    if (!hasSearchTerm) {
+      return selectedIds.includes(idStr);
+    }
+
+    // With search → show all eligible matches (selected + unselected)
     const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
     return (
       u.fullName?.toLowerCase().includes(term) ||
       u.studentId?.toLowerCase().includes(term) ||
@@ -224,8 +232,15 @@ const AttendanceModal = ({ event, onClose, onSaved }) => {
   });
 
   const filteredExternals = externalPreReg.filter((e) => {
+    const isSelected = externalAttendees.some((a) => extKey(a) === extKey(e));
+
+    // No search → only show selected externals
+    if (!hasSearchTerm) {
+      return isSelected;
+    }
+
+    // With search → show all matching (selected + unselected)
     const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
     return (
       e.name?.toLowerCase().includes(term) ||
       e.institution?.toLowerCase().includes(term) ||
@@ -386,7 +401,7 @@ const AttendanceModal = ({ event, onClose, onSaved }) => {
   };
 
  // ============ PRINT ATTENDANCE LIST ============
-const handlePrint = () => {
+const handlePrint = async () => {
   const esc = (s) =>
     String(s ?? "")
       .replace(/&/g, "&amp;")
@@ -394,121 +409,139 @@ const handlePrint = () => {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
 
-  // Try every plausible place a member's phone could live
-  const getMemberPhone = (u) =>
-    u?.phone ||
-    u?.personalInfo?.phone ||
-    u?.personalInfo?.phoneNumber ||
-    u?.personalInfo?.contactNumber ||
-    u?.guardianInfo?.emergencyContact?.contactNo ||
-    u?.alumniInfo?.contactPhone ||
-    "";
-
-  // Pretty-print BD phone numbers: 01XXXXXXXXX → 01XXX-XXXXXX
-  const fmtPhone = (raw) => {
-    const s = String(raw ?? "").trim();
-    if (!s) return "";
-    const digits = s.replace(/\D/g, "");
-    if (digits.length === 11 && digits.startsWith("01")) {
-      return `${digits.slice(0, 5)}-${digits.slice(5)}`;
-    }
-    return s; // leave as-is if not a standard BD number
-  };
-
-  // ---- Build list of member attendees ----
-  const memberRows = [];
-  users.forEach((u) => {
-    const idStr = u._id.toString();
-    if (!selectedIds.includes(idStr)) return;
-    const wasMarked = initialIds.includes(idStr);
-
-    // Prefer department; fall back to college if present
-    const institution =
-      u.department ||
-      u.academicInfo?.university?.collegeName ||
-      "Adamjee Cantonment College";
-
-    memberRows.push({
-      type: "Member",
-      name: u.fullName || "",
-      studentId: u.studentId || "",
-      email: u.email || "",
-      phone: fmtPhone(getMemberPhone(u)),
-      institution,
-      isNew: !wasMarked,
+  // ✅ Convert imported logo to base64 data URL so it renders inside the iframe
+  let logoDataUrl = "";
+  try {
+    const logoRes = await fetch(Logo.src || Logo);
+    const logoBlob = await logoRes.blob();
+    logoDataUrl = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(logoBlob);
     });
-  });
+  } catch (err) {
+    console.error("Failed to load logo for print:", err);
+    // Continue without logo — print still works
+  }
 
-  // ---- Build list of external attendees ----
-  const externalRows = externalAttendees.map((e) => ({
-    type: "External",
-    name: e.name || "",
-    studentId: e.identificationNo || "",
-    email: e.email || "",
-    phone: fmtPhone(e.phone),
-    institution: e.institution || "—",
-    isNew: !initialExternalKeys.includes(extKey(e)),
-  }));
+    // Try every plausible place a member's phone could live
+    const getMemberPhone = (u) =>
+      u?.phone ||
+      u?.personalInfo?.phone ||
+      u?.personalInfo?.phoneNumber ||
+      u?.personalInfo?.contactNumber ||
+      u?.guardianInfo?.emergencyContact?.contactNo ||
+      u?.alumniInfo?.contactPhone ||
+      "";
 
-  const allRows = [...memberRows, ...externalRows];
-  const total = allRows.length;
-  const memberCount = memberRows.length;
-  const externalCount = externalRows.length;
-  const contactCount = allRows.filter((r) => r.phone || r.email).length;
+    // Pretty-print BD phone numbers: 01XXXXXXXXX → 01XXX-XXXXXX
+    const fmtPhone = (raw) => {
+      const s = String(raw ?? "").trim();
+      if (!s) return "";
+      const digits = s.replace(/\D/g, "");
+      if (digits.length === 11 && digits.startsWith("01")) {
+        return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+      }
+      return s; // leave as-is if not a standard BD number
+    };
 
-  const printDate = new Date().toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+    // ---- Build list of member attendees ----
+    const memberRows = [];
+    users.forEach((u) => {
+      const idStr = u._id.toString();
+      if (!selectedIds.includes(idStr)) return;
+      const wasMarked = initialIds.includes(idStr);
 
-  const eventDateStr = event.eventDate
-    ? new Date(event.eventDate).toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "—";
+      // Prefer department; fall back to college if present
+      const institution =
+        u.department ||
+        u.academicInfo?.university?.collegeName ||
+        "Adamjee Cantonment College";
 
-  const rowsHtml = allRows
-    .map(
-      (r, i) => `
-      <tr>
-        <td class="num">${i + 1}</td>
-        <td>
-          <div class="name">${esc(r.name)}</div>
-          <div class="sub">
-            ${
-              r.studentId
-                ? `<span class="tag">ID: ${esc(r.studentId)}</span>`
-                : ""
-            }
-            ${
-              r.isNew
-                ? `<span class="tag new">NEW</span>`
-                : `<span class="tag prev">PREVIOUSLY MARKED</span>`
-            }
-          </div>
-        </td>
-        <td>
-          ${
-            r.type === "Member"
-              ? `<span class="badge member">Member</span>`
-              : `<span class="badge external">External</span>`
-          }
-        </td>
-        <td>${esc(r.institution || "—")}</td>
-        <td class="contact">
-          ${r.phone ? `<div>☎ ${esc(r.phone)}</div>` : ""}
-          ${r.email ? `<div>✉ ${esc(r.email)}</div>` : ""}
-          ${!r.email && !r.phone ? `<span class="muted">—</span>` : ""}
-        </td>
-      </tr>
-    `,
-    )
-    .join("");
+      memberRows.push({
+        type: "Member",
+        name: u.fullName || "",
+        studentId: u.studentId || "",
+        membershipId: u.membershipId || "",
+        email: u.email || "",
+        phone: fmtPhone(getMemberPhone(u)),
+        institution,
+        isNew: !wasMarked,
+      });
+    });
 
-  const html = `<!DOCTYPE html>
+    // ---- Build list of external attendees ----
+    const externalRows = externalAttendees.map((e) => ({
+      type: "External",
+      name: e.name || "",
+      studentId: e.identificationNo || "",
+      email: e.email || "",
+      phone: fmtPhone(e.phone),
+      institution: e.institution || "—",
+      isNew: !initialExternalKeys.includes(extKey(e)),
+    }));
+
+    const allRows = [...memberRows, ...externalRows];
+    const total = allRows.length;
+    const memberCount = memberRows.length;
+    const externalCount = externalRows.length;
+    const contactCount = allRows.filter((r) => r.phone || r.email).length;
+
+    const printDate = new Date().toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+    const eventDateStr = event.eventDate
+      ? new Date(event.eventDate).toLocaleDateString(undefined, {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
+      : "—";
+
+    const rowsHtml = allRows
+  .map(
+    (r, i) => `
+  <tr>
+    <td class="num">${i + 1}</td>
+    <td>
+      <div class="name">${esc(r.name)}</div>
+      <div class="sub">
+        ${
+          r.studentId
+            ? `<span class="tag">C.ID: ${esc(r.studentId)}</span>`
+            : ""
+        }
+        ${
+          r.membershipId
+            ? `<span class="tag">M.ID: ${esc(r.membershipId)}</span>`
+            : ""
+        }
+        ${r.isNew ? `<span class="tag new">NEW</span>` : ""}
+      </div>
+    </td>
+    <td>
+      ${
+        r.type === "Member"
+          ? `<span class="badge member">Member</span>`
+          : `<span class="badge external">External</span>`
+      }
+    </td>
+    <td>${esc(r.institution || "—")}</td>
+    <td class="contact">
+      ${r.phone ? `<div>☎ ${esc(r.phone)}</div>` : ""}
+      ${r.email ? `<div>✉ ${esc(r.email)}</div>` : ""}
+      ${!r.email && !r.phone ? `<span class="muted">—</span>` : ""}
+    </td>
+  </tr>
+`,
+  )
+  .join("");
+
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -526,11 +559,31 @@ const handlePrint = () => {
   }
 
   .header {
-    text-align: center;
-    padding: 12pt 0 14pt;
-    border-bottom: 3px double #3D444C;
-    margin-bottom: 14pt;
+  text-align: center;
+  padding: 12pt 0 14pt;
+  border-bottom: 3px double #3D444C;
+  margin-bottom: 14pt;
   }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14pt;
+    margin-bottom: 8pt;
+  }
+
+  .header-top .logo {
+    width: 60pt;
+    height: 60pt;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .header-top .header-text {
+    text-align: left;
+  }
+
   .header .club {
     font-size: 22pt;
     font-weight: 800;
@@ -543,7 +596,7 @@ const handlePrint = () => {
     color: #994D35;
     letter-spacing: 3px;
     text-transform: uppercase;
-    margin: 2pt 0 10pt;
+    margin: 2pt 0 0;
     font-weight: 600;
   }
   .header .doc-title {
@@ -693,8 +746,17 @@ const handlePrint = () => {
 </head>
 <body>
   <div class="header">
-    <h1 class="club">ACC CAREER CLUB</h1>
-    <p class="subtitle">Adamjee Cantonment College</p>
+  <div class="header-top">
+    ${
+        logoDataUrl
+          ? `<img src="${logoDataUrl}" alt="ACC Career Club Logo" class="logo" />`
+          : ""
+      }
+      <div class="header-text">
+        <h1 class="club">ACC CAREER CLUB</h1>
+        <p class="subtitle">Adamjee Cantonment College</p>
+      </div>
+    </div>
     <h2 class="doc-title">Event Attendance List</h2>
   </div>
 
@@ -757,71 +819,71 @@ const handlePrint = () => {
 </body>
 </html>`;
 
-  // Hidden iframe — no new window/tab
-  const iframe = document.createElement("iframe");
-  iframe.setAttribute("aria-hidden", "true");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
-  iframe.style.visibility = "hidden";
-  document.body.appendChild(iframe);
+    // Hidden iframe — no new window/tab
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
 
-  let cleaned = false;
-  const cleanup = () => {
-    if (cleaned) return;
-    cleaned = true;
-    setTimeout(() => {
-      try {
-        document.body.removeChild(iframe);
-      } catch (_) {}
-    }, 500);
-  };
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  const printNow = () => {
-    try {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    } catch (err) {
-      console.error("Print error:", err);
-      alert("Failed to open print dialog. Please try again.");
-    } finally {
-      const win = iframe.contentWindow;
-      if (win) {
-        const done = () => cleanup();
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      setTimeout(() => {
         try {
-          win.addEventListener("afterprint", done, { once: true });
+          document.body.removeChild(iframe);
         } catch (_) {}
-        setTimeout(done, 1500);
-      } else {
-        cleanup();
+      }, 500);
+    };
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const printNow = () => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (err) {
+        console.error("Print error:", err);
+        alert("Failed to open print dialog. Please try again.");
+      } finally {
+        const win = iframe.contentWindow;
+        if (win) {
+          const done = () => cleanup();
+          try {
+            win.addEventListener("afterprint", done, { once: true });
+          } catch (_) {}
+          setTimeout(done, 1500);
+        } else {
+          cleanup();
+        }
       }
-    }
-  };
+    };
 
-  const waitForReady = () => {
-    const win = iframe.contentWindow;
-    if (win.document.fonts && win.document.fonts.ready) {
-      win.document.fonts.ready.then(() => setTimeout(printNow, 200));
+    const waitForReady = () => {
+      const win = iframe.contentWindow;
+      if (win.document.fonts && win.document.fonts.ready) {
+        win.document.fonts.ready.then(() => setTimeout(printNow, 200));
+      } else {
+        setTimeout(printNow, 300);
+      }
+    };
+
+    if (iframe.contentWindow.document.readyState === "complete") {
+      waitForReady();
     } else {
-      setTimeout(printNow, 300);
+      iframe.addEventListener("load", waitForReady, { once: true });
+      setTimeout(waitForReady, 400);
     }
   };
-
-  if (iframe.contentWindow.document.readyState === "complete") {
-    waitForReady();
-  } else {
-    iframe.addEventListener("load", waitForReady, { once: true });
-    setTimeout(waitForReady, 400);
-  }
-};
 
   const alreadyMarkedCount = selectedIds.filter((id) =>
     initialIds.includes(id),
@@ -894,9 +956,20 @@ const handlePrint = () => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name, ID, or institution..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#3D444C]/20 rounded-lg focus:outline-none focus:border-[#3D444C] text-sm"
+              placeholder="Search by name, ID, or email..."
+              className="w-full pl-10 pr-10 py-2.5 bg-white border border-[#3D444C]/20 rounded-lg focus:outline-none focus:border-[#3D444C] text-sm"
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-[#3D444C]/50 hover:text-[#994D35] hover:bg-[#994D35]/10 transition-colors"
+                title="Clear search"
+                aria-label="Clear search"
+              >
+                <FaTimes className="text-sm" />
+              </button>
+            )}
           </div>
 
           {/* Scan button */}
@@ -988,109 +1061,118 @@ const handlePrint = () => {
         </div>
 
         {/* ==================== PRE-REGISTERED EXTERNALS ==================== */}
-        {externalPreReg.length > 0 && (
-          <div className="bg-white rounded-2xl border border-purple-200 p-4 mb-6 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-              <h3 className="text-sm font-bold text-[#3D444C] flex items-center gap-2">
-                <FaBuilding className="text-purple-600" /> Pre-Registered
-                Externals
-                <span className="text-[#3D444C]/50 font-normal">
-                  (click each to mark attendance)
+        {externalPreReg.length > 0 &&
+          (hasSearchTerm || filteredExternals.length > 0) && (
+            <div className="bg-white rounded-2xl border border-purple-200 p-4 mb-6 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h3 className="text-sm font-bold text-[#3D444C] flex items-center gap-2">
+                  <FaBuilding className="text-purple-600" /> Pre-Registered
+                  Externals
+                  <span className="text-[#3D444C]/50 font-normal">
+                    {hasSearchTerm
+                      ? "(showing search results)"
+                      : "(click each to mark attendance)"}
+                  </span>
+                </h3>
+                <span className="text-xs text-[#3D444C]/60">
+                  {
+                    externalAttendees.filter((a) => preRegKeys.has(extKey(a)))
+                      .length
+                  }{" "}
+                  / {externalPreReg.length} selected
                 </span>
-              </h3>
-              <span className="text-xs text-[#3D444C]/60">
-                {
-                  externalAttendees.filter((a) => preRegKeys.has(extKey(a)))
-                    .length
-                }{" "}
-                / {externalPreReg.length} selected
-              </span>
-            </div>
-
-            {filteredExternals.length === 0 ? (
-              <p className="text-sm text-[#3D444C]/50 italic py-4 text-center">
-                No pre-registered externals match your search
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                {filteredExternals.map((ext, i) => {
-                  const isSelected = isExternalSelected(ext);
-                  const wasSelected = initialExternalKeys.includes(extKey(ext));
-                  return (
-                    <button
-                      key={`${extKey(ext)}-${i}`}
-                      onClick={() => toggleExternal(ext)}
-                      className={`text-left p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative ${
-                        isSelected && wasSelected
-                          ? "bg-green-500 text-white border-green-600 shadow-md"
-                          : isSelected
-                            ? "bg-purple-600 text-white border-purple-700 shadow-md"
-                            : "bg-purple-50/50 text-[#3D444C] border-purple-200 hover:border-purple-400 hover:shadow-sm"
-                      }`}
-                    >
-                      {wasSelected && (
-                        <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/30 text-[8px] font-bold">
-                          MARKED
-                        </span>
-                      )}
-                      <div className="relative shrink-0">
-                        <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-2 ${
-                            isSelected
-                              ? "bg-white/20 border-white/50 text-white"
-                              : "bg-purple-500 border-purple-600 text-white"
-                          }`}
-                        >
-                          {ext.name?.[0]?.toUpperCase() || "?"}
-                        </div>
-                        {isSelected && (
-                          <div
-                            className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
-                              wasSelected ? "bg-white" : "bg-[#D3A16D]"
-                            }`}
-                          >
-                            <FaCheck
-                              className={`text-[10px] ${
-                                wasSelected
-                                  ? "text-green-600"
-                                  : "text-[#3D444C]"
-                              }`}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={`font-semibold text-sm truncate ${
-                            isSelected ? "text-white" : "text-[#3D444C]"
-                          }`}
-                        >
-                          {ext.name}
-                        </p>
-                        <p
-                          className={`text-xs truncate ${
-                            isSelected ? "text-white/80" : "text-[#3D444C]/60"
-                          }`}
-                        >
-                          {ext.institution || "External"}
-                        </p>
-                        {ext.identificationNo && (
-                          <p
-                            className={`text-[10px] truncate ${
-                              isSelected ? "text-white/60" : "text-[#3D444C]/40"
-                            }`}
-                          >
-                            ID: {ext.identificationNo}
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
               </div>
-            )}
-          </div>
-        )}
+
+              {filteredExternals.length === 0 ? (
+                <p className="text-sm text-[#3D444C]/50 italic py-4 text-center">
+                  {hasSearchTerm
+                    ? "No pre-registered externals match your search"
+                    : "No externals marked yet. Search to find and mark attendees."}
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {filteredExternals.map((ext, i) => {
+                    const isSelected = isExternalSelected(ext);
+                    const wasSelected = initialExternalKeys.includes(
+                      extKey(ext),
+                    );
+                    return (
+                      <button
+                        key={`${extKey(ext)}-${i}`}
+                        onClick={() => toggleExternal(ext)}
+                        className={`text-left p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative ${
+                          isSelected && wasSelected
+                            ? "bg-green-500 text-white border-green-600 shadow-md"
+                            : isSelected
+                              ? "bg-purple-600 text-white border-purple-700 shadow-md"
+                              : "bg-purple-50/50 text-[#3D444C] border-purple-200 hover:border-purple-400 hover:shadow-sm"
+                        }`}
+                      >
+                        {isSelected && wasSelected && (
+                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/30 text-[8px] font-bold">
+                            MARKED
+                          </span>
+                        )}
+                        <div className="relative shrink-0">
+                          <div
+                            className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-2 ${
+                              isSelected
+                                ? "bg-white/20 border-white/50 text-white"
+                                : "bg-purple-500 border-purple-600 text-white"
+                            }`}
+                          >
+                            {ext.name?.[0]?.toUpperCase() || "?"}
+                          </div>
+                          {isSelected && (
+                            <div
+                              className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
+                                wasSelected ? "bg-white" : "bg-[#D3A16D]"
+                              }`}
+                            >
+                              <FaCheck
+                                className={`text-[10px] ${
+                                  wasSelected
+                                    ? "text-green-600"
+                                    : "text-[#3D444C]"
+                                }`}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`font-semibold text-sm truncate ${
+                              isSelected ? "text-white" : "text-[#3D444C]"
+                            }`}
+                          >
+                            {ext.name}
+                          </p>
+                          <p
+                            className={`text-xs truncate ${
+                              isSelected ? "text-white/80" : "text-[#3D444C]/60"
+                            }`}
+                          >
+                            {ext.institution || "External"}
+                          </p>
+                          {ext.identificationNo && (
+                            <p
+                              className={`text-[10px] truncate ${
+                                isSelected
+                                  ? "text-white/60"
+                                  : "text-[#3D444C]/40"
+                              }`}
+                            >
+                              ID: {ext.identificationNo}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
         {/* ==================== MANUAL EXTERNALS ==================== */}
         {manualExternalAttendees.length > 0 && (
@@ -1146,92 +1228,132 @@ const handlePrint = () => {
           <div className="text-center py-16 bg-white rounded-2xl border border-[#3D444C]/10">
             <FaUsers className="text-4xl text-[#3D444C]/30 mx-auto mb-3" />
             <p className="text-[#3D444C]/60">
-              {showAllUsers ? "No users found" : "No pre-registered members"}
+              {hasSearchTerm
+                ? "No users match your search"
+                : "No members marked yet. Search for a name, ID, or email to mark attendance."}
             </p>
+            {!hasSearchTerm && selectedIds.length === 0 && (
+              <p className="text-xs text-[#3D444C]/40 mt-2">
+                Tip: scan an ID or search to find and mark members.
+              </p>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {filteredUsers.map((u) => {
-              const idStr = u._id.toString();
-              const isSelected = selectedIds.includes(idStr);
-              const wasSelected = initialIds.includes(idStr);
-              return (
-                <button
-                  key={u._id}
-                  onClick={() => toggleUser(idStr)}
-                  className={`text-left p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative ${
-                    isSelected && wasSelected
-                      ? "bg-green-500 text-white border-green-600 shadow-md"
-                      : isSelected
-                        ? "bg-[#3D444C] text-[#E7E3D8] border-[#3D444C] shadow-md"
-                        : "bg-white text-[#3D444C] border-[#3D444C]/10 hover:border-[#D3A16D] hover:shadow-sm"
-                  }`}
-                >
-                  {wasSelected && (
-                    <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/25 text-[8px] font-bold flex items-center gap-1">
-                      <FaHistory className="text-[8px]" /> PRE
-                    </span>
-                  )}
-                  <div className="relative shrink-0">
-                    <div
-                      className={`relative w-12 h-12 rounded-full overflow-hidden border-2 ${
-                        isSelected && wasSelected
-                          ? "border-white"
-                          : isSelected
-                            ? "border-[#D3A16D]"
-                            : "border-[#3D444C]/10"
-                      }`}
-                    >
-                      <Image
-                        src={u.personalInfo?.profilePicture || AVATAR_FALLBACK}
-                        alt={u.fullName}
-                        fill
-                        className="object-cover"
-                        sizes="48px"
-                      />
-                    </div>
-                    {isSelected && (
+          <div>
+            <h3 className="text-sm font-bold text-[#3D444C] mb-3 flex items-center gap-2">
+              <FaUserCheck className="text-[#994D35]" />
+              {hasSearchTerm ? (
+                <>
+                  Search Results
+                  <span className="text-[#3D444C]/50 font-normal">
+                    ({filteredUsers.length} matching)
+                  </span>
+                </>
+              ) : (
+                <>
+                  Marked Members
+                  <span className="text-[#3D444C]/50 font-normal">
+                    ({selectedIds.length} selected)
+                  </span>
+                </>
+              )}
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filteredUsers.map((u) => {
+                const idStr = u._id.toString();
+                const isSelected = selectedIds.includes(idStr);
+                const wasSelected = initialIds.includes(idStr);
+                return (
+                  <button
+                    key={u._id}
+                    onClick={() => toggleUser(idStr)}
+                    className={`text-left p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 relative ${
+                      isSelected && wasSelected
+                        ? "bg-green-500 text-white border-green-600 shadow-md"
+                        : isSelected
+                          ? "bg-[#3D444C] text-[#E7E3D8] border-[#3D444C] shadow-md"
+                          : "bg-white text-[#3D444C] border-[#3D444C]/10 hover:border-[#D3A16D] hover:shadow-sm"
+                    }`}
+                  >
+                    {isSelected && wasSelected && (
+                      <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-white/25 text-[8px] font-bold flex items-center gap-1">
+                        <FaHistory className="text-[8px]" /> PRE
+                      </span>
+                    )}
+                    <div className="relative shrink-0">
                       <div
-                        className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
-                          wasSelected ? "bg-white" : "bg-[#D3A16D]"
+                        className={`relative w-12 h-12 rounded-full overflow-hidden border-2 flex items-center justify-center ${
+                          isSelected && wasSelected
+                            ? "border-white"
+                            : isSelected
+                              ? "border-[#D3A16D]"
+                              : "border-[#3D444C]/10"
                         }`}
                       >
-                        <FaCheck
-                          className={`text-[10px] ${
-                            wasSelected ? "text-green-600" : "text-[#3D444C]"
-                          }`}
-                        />
+                        {u.personalInfo?.profilePicture ? (
+                          <Image
+                            src={u.personalInfo.profilePicture}
+                            alt={u.fullName}
+                            fill
+                            className="object-cover"
+                            sizes="48px"
+                          />
+                        ) : (
+                          <FaUserCircle
+                            className={`text-3xl ${
+                              isSelected
+                                ? wasSelected
+                                  ? "text-white"
+                                  : "text-[#E7E3D8]"
+                                : "text-[#3D444C]/40"
+                            }`}
+                          />
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`font-semibold text-sm truncate ${
-                        isSelected ? "text-white" : "text-[#3D444C]"
-                      }`}
-                    >
-                      {u.fullName}
-                    </p>
-                    <p
-                      className={`text-xs truncate ${
-                        isSelected ? "text-white/80" : "text-[#3D444C]/60"
-                      }`}
-                    >
-                      ID: {u.studentId || "N/A"}
-                    </p>
-                    {u.department && (
+                      {isSelected && (
+                        <div
+                          className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white ${
+                            wasSelected ? "bg-white" : "bg-[#D3A16D]"
+                          }`}
+                        >
+                          <FaCheck
+                            className={`text-[10px] ${
+                              wasSelected ? "text-green-600" : "text-[#3D444C]"
+                            }`}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
                       <p
-                        className={`text-[10px] truncate ${
-                          isSelected ? "text-white/70" : "text-[#3D444C]/50"
+                        className={`font-semibold text-sm truncate ${
+                          isSelected ? "text-white" : "text-[#3D444C]"
                         }`}
                       >
-                        {u.department}
+                        {u.fullName}
                       </p>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+                      <p
+                        className={`text-xs truncate ${
+                          isSelected ? "text-white/80" : "text-[#3D444C]/60"
+                        }`}
+                      >
+                        ID: {u.studentId || "N/A"}
+                      </p>
+                      {u.department && (
+                        <p
+                          className={`text-[10px] truncate ${
+                            isSelected ? "text-white/70" : "text-[#3D444C]/50"
+                          }`}
+                        >
+                          {u.department}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -1308,6 +1430,7 @@ const handlePrint = () => {
                   setExternalForm({
                     name: "",
                     email: "",
+                    phone: "",
                     institution: "",
                     identificationNo: "",
                   });

@@ -38,7 +38,7 @@ export async function GET(request) {
       role: { $nin: ["modarator", "alumni"] }, // Exclude these roles
     })
       .select(
-        "fullName email phone studentId department role personalInfo.classOrYear personalInfo.profilePicture",
+        "fullName email phone studentId membershipId department role personalInfo.classOrYear personalInfo.profilePicture",
       )
       .sort({ fullName: 1 })
       .lean();
