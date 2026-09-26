@@ -1,8 +1,8 @@
 // app/api/secure/users/search/route.js
 import { NextResponse } from "next/server";
-import { connectToDatabase } from "../../../../lib/mongodb";
-import User from "../../../../models/User";
-import { getCurrentUser } from "../../../../lib/authUtils";
+import { connectToDatabase } from "../../../lib/mongodb";
+import User from "../../../models/User";
+import { getCurrentUser } from "../../../lib/authUtils";
 
 export async function GET(request) {
   try {
