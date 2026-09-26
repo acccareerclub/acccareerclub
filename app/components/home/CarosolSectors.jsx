@@ -16,6 +16,7 @@ import {
   FaShieldAlt,
 } from "react-icons/fa";
 import { motion, useAnimation, useInView } from "framer-motion";
+import { useAuth } from "@/app/context/AuthContext";
 
 const CarosolSectors = () => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -23,6 +24,7 @@ const CarosolSectors = () => {
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.3 });
   const controls = useAnimation();
+  const {user} = useAuth();
 
   // Sector data with icons and links
   const sectors = [
@@ -34,7 +36,7 @@ const CarosolSectors = () => {
       color: "#FF6B6B",
       gradient: "from-[#FF6B6B] to-[#EE5A24]",
       link: "/jobs",
-      stats: "1,200+ Openings",
+      stats: "See all jobs",
       badge: "Hot",
     },
     {
@@ -45,7 +47,7 @@ const CarosolSectors = () => {
       color: "#4ECDC4",
       gradient: "from-[#4ECDC4] to-[#0ABDE3]",
       link: "/companies",
-      stats: "500+ Partners",
+      stats: "Read about companies",
       badge: "New",
     },
     {
@@ -56,18 +58,18 @@ const CarosolSectors = () => {
       color: "#FFD93D",
       gradient: "from-[#FFD93D] to-[#F6B93B]",
       link: "/all-notice",
-      stats: "15 New",
+      stats: "Go to notices",
       badge: "Urgent",
     },
     {
       id: "cv",
       title: "CV Builder",
-      description: "Create professional resumes",
+      description: "Create professional resumes by filling your profile info",
       icon: FaFileAlt,
       color: "#A29BFE",
       gradient: "from-[#A29BFE] to-[#6C5CE7]",
-      link: "/cv-builder",
-      stats: "Build Now",
+      link: `/profile/${user?.id}`,
+      stats: "Go to profile",
       badge: "Free",
     },
   ];

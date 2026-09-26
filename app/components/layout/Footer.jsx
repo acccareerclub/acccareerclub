@@ -35,15 +35,14 @@ const Footer = () => {
     { name: "Companies", href: "/companies" },
     { name: "Sessions", href: "/sessions" },
     { name: "Events", href: "/events" },
-    { name: "Articles", href: "/articles" },
-    { name: "Contact", href: "/contact" },
+    { name: "Articles", href: "/articles" },  
   ];
 
   const supportLinks = [
-    { name: "Help Center", href: "/help" },
+    { name: "Contact Us", href: "/contact" },
     { name: "Privacy Policy", href: "/privacy" },
     { name: "Terms of Service", href: "/terms" },
-    { name: "Cookie Policy", href: "/cookies" },
+    { name: "Tutorials", href: "/tutorials" },
     { name: "FAQ", href: "/faq" },
   ];
 
@@ -168,29 +167,6 @@ const Footer = () => {
                 </a>
               </div>
             </div>
-
-            {/* Articles Signup - Updated for mobile */}
-            <div className="mt-4 pt-4 border-t border-white/10">
-              <p className="text-xs text-white/60 mb-2">
-                Subscribe to our articles
-              </p>
-              <form
-                className="flex flex-col sm:flex-row gap-2 sm:gap-0"
-                onSubmit={(e) => e.preventDefault()}
-              >
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="w-full sm:flex-1 px-3 py-2 text-sm bg-white/10 border border-white/20 rounded-lg sm:rounded-l-lg sm:rounded-r-none focus:outline-none focus:border-[#D3A16D] transition-colors duration-200 text-white placeholder:text-white/40"
-                />
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto px-4 py-2 bg-[#994D35] hover:bg-[#D3A16D] transition-all duration-300 rounded-lg sm:rounded-r-lg sm:rounded-l-none text-sm font-semibold hover:scale-105"
-                >
-                  Subscribe
-                </button>
-              </form>
-            </div>
           </div>
         </div>
       </div>
@@ -220,20 +196,7 @@ const Footer = () => {
             >
               Terms
             </Link>
-            <span className="w-px h-3 bg-white/20"></span>
-            <Link
-              href="/cookies"
-              className="hover:text-[#D3A16D] transition-colors duration-200"
-            >
-              Cookies
-            </Link>
-            <span className="w-px h-3 bg-white/20"></span>
-            <Link
-              href="/sitemap"
-              className="hover:text-[#D3A16D] transition-colors duration-200"
-            >
-              Sitemap
-            </Link>
+            
           </div>
         </div>
       </div>

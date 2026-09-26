@@ -305,7 +305,6 @@ const NotFound = () => {
               { label: "Jobs", href: "/jobs" },
               { label: "Companies", href: "/companies" },
               { label: "Notices", href: "/all-notice" },
-              { label: "CV Builder", href: "/cv-builder" },
             ].map((link, index) => (
               <motion.div
                 key={link.href}

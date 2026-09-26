@@ -16,6 +16,8 @@ import {
   FaEnvelope,
   FaIdCard,
   FaGraduationCap,
+  FaToggleOn,
+  FaToggleOff,
 } from "react-icons/fa";
 import Link from "next/link";
 
@@ -216,7 +218,9 @@ const SettingsClient = () => {
           <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#3D444C] to-[#994D35] flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
-                {userInfo.fullName?.charAt(0) || <FaUserCircle className="text-3xl" />}
+                {userInfo.fullName?.charAt(0) || (
+                  <FaUserCircle className="text-3xl" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-xl font-bold text-[#3D444C] truncate">
@@ -244,9 +248,7 @@ const SettingsClient = () => {
         {/* Settings Card */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="px-6 py-4 bg-gradient-to-r from-[#3D444C] to-[#994D35]">
-            <h2 className="text-xl font-bold text-white">
-              Email Preferences
-            </h2>
+            <h2 className="text-xl font-bold text-white">Email Preferences</h2>
             <p className="text-white/80 text-sm">
               Choose which emails you want to receive
             </p>
@@ -254,7 +256,14 @@ const SettingsClient = () => {
 
           <div className="p-6 space-y-6">
             {/* Notice Mail */}
-            <div className="flex items-center justify-between p-4 bg-[#E7E3D8]/20 rounded-xl hover:bg-[#E7E3D8]/30 transition-colors duration-200">
+            {/* Notice Mail */}
+            <div
+              className={`flex items-center justify-between p-4 rounded-xl transition-colors duration-200 ${
+                settings.noticeMail
+                  ? "bg-[#D3A16D]/15 hover:bg-[#D3A16D]/25"
+                  : "bg-[#E7E3D8]/20 hover:bg-[#E7E3D8]/30"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#D3A16D]/20 flex items-center justify-center flex-shrink-0">
                   <FaBell className="text-[#994D35] text-xl" />
@@ -266,7 +275,7 @@ const SettingsClient = () => {
                   </p>
                 </div>
               </div>
-              <ToggleSwitch
+              <IconToggle
                 checked={settings.noticeMail}
                 onChange={() => handleToggle("noticeMail")}
                 disabled={saving}
@@ -274,7 +283,13 @@ const SettingsClient = () => {
             </div>
 
             {/* Job Mail */}
-            <div className="flex items-center justify-between p-4 bg-[#E7E3D8]/20 rounded-xl hover:bg-[#E7E3D8]/30 transition-colors duration-200">
+            <div
+              className={`flex items-center justify-between p-4 rounded-xl transition-colors duration-200 ${
+                settings.jobMail
+                  ? "bg-[#D3A16D]/15 hover:bg-[#D3A16D]/25"
+                  : "bg-[#E7E3D8]/20 hover:bg-[#E7E3D8]/30"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#D3A16D]/20 flex items-center justify-center flex-shrink-0">
                   <FaBriefcase className="text-[#994D35] text-xl" />
@@ -286,7 +301,7 @@ const SettingsClient = () => {
                   </p>
                 </div>
               </div>
-              <ToggleSwitch
+              <IconToggle
                 checked={settings.jobMail}
                 onChange={() => handleToggle("jobMail")}
                 disabled={saving}
@@ -294,19 +309,25 @@ const SettingsClient = () => {
             </div>
 
             {/* Newsletter Mail */}
-            <div className="flex items-center justify-between p-4 bg-[#E7E3D8]/20 rounded-xl hover:bg-[#E7E3D8]/30 transition-colors duration-200">
+            <div
+              className={`flex items-center justify-between p-4 rounded-xl transition-colors duration-200 ${
+                settings.newsletterMail
+                  ? "bg-[#D3A16D]/15 hover:bg-[#D3A16D]/25"
+                  : "bg-[#E7E3D8]/20 hover:bg-[#E7E3D8]/30"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#D3A16D]/20 flex items-center justify-center flex-shrink-0">
                   <FaNewspaper className="text-[#994D35] text-xl" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[#3D444C]">Newsletter</h3>
+                  <h3 className="font-semibold text-[#3D444C]">Articles</h3>
                   <p className="text-sm text-gray-600">
-                    Stay updated with our monthly newsletter
+                    Stay updated with our articles
                   </p>
                 </div>
               </div>
-              <ToggleSwitch
+              <IconToggle
                 checked={settings.newsletterMail}
                 onChange={() => handleToggle("newsletterMail")}
                 disabled={saving}
@@ -342,8 +363,8 @@ const SettingsClient = () => {
             <div className="text-[#994D35] text-xl">💡</div>
             <div>
               <p className="text-sm text-[#3D444C]">
-                <strong>Note:</strong> Changes to your email preferences will be applied immediately.
-                You can change these settings at any time.
+                <strong>Note:</strong> Changes to your email preferences will be
+                applied immediately. You can change these settings at any time.
               </p>
             </div>
           </div>
@@ -353,28 +374,31 @@ const SettingsClient = () => {
   );
 };
 
-// Toggle Switch Component
-const ToggleSwitch = ({ checked, onChange, disabled }) => {
+// Icon-based Toggle Switch using react-icons/fa
+const IconToggle = ({ checked, onChange, disabled }) => {
   return (
     <button
       type="button"
       onClick={onChange}
       disabled={disabled}
-      className={`
-        relative inline-flex h-6 w-11 items-center rounded-full 
-        transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#D3A16D] focus:ring-offset-2
-        ${checked ? 'bg-[#994D35]' : 'bg-gray-300'}
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-      `}
-      role="switch"
       aria-checked={checked}
+      role="switch"
+      aria-label={checked ? "Disable" : "Enable"}
+      className={`
+        text-4xl transition-all duration-200 ease-in-out
+        focus:outline-none focus:ring-2 focus:ring-[#D3A16D] focus:ring-offset-2 rounded-full
+        ${
+          disabled
+            ? "opacity-50 cursor-not-allowed"
+            : "cursor-pointer hover:scale-110"
+        }
+      `}
     >
-      <span
-        className={`
-          inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ease-in-out
-          ${checked ? 'translate-x-6' : 'translate-x-1'}
-        `}
-      />
+      {checked ? (
+        <FaToggleOn className="text-[#994D35]" />
+      ) : (
+        <FaToggleOff className="text-gray-400" />
+      )}
     </button>
   );
 };

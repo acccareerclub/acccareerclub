@@ -153,7 +153,7 @@ const ProfileClient = () => {
     coModerator: false, // middle
     moderator: false, // right
   });
-
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
   // Fetch user data
   useEffect(() => {
     const fetchUser = async () => {
@@ -196,7 +196,7 @@ const ProfileClient = () => {
     };
 
     fetchUser();
-  }, [userId, authUser, router]);
+  }, [userId, authUser, router, refetchTrigger]);
 
   // Set image preview when user data loads
   useEffect(() => {
@@ -876,13 +876,61 @@ const ProfileClient = () => {
           <h2 className="text-2xl font-bold text-[#3D444C] mb-2">
             Profile Not Found
           </h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => router.push("/")}
-            className="px-6 py-3 bg-[#994D35] text-white rounded-lg hover:bg-[#D3A16D] transition-colors"
-          >
-            Go Home
-          </button>
+          <p className="text-gray-600 mb-4">{error}</p>
+
+          {/* Login hint */}
+          <div className="bg-[#E7E3D8]/50 border border-[#D3A16D]/40 rounded-xl p-3 mb-6 flex items-start gap-2 text-left">
+            <FaExclamationTriangle className="text-[#994D35] mt-0.5 shrink-0" />
+            <p className="text-sm text-[#3D444C]">
+              <span className="font-semibold">
+                Are you sure you are logged in?
+              </span>{" "}
+              Your session may have expired. Please try again or log in to
+              continue.
+            </p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                setRefetchTrigger((prev) => prev + 1);
+              }}
+              className="w-full px-6 py-3 bg-[#994D35] text-white rounded-lg hover:bg-[#D3A16D] transition-colors font-semibold flex items-center justify-center gap-2"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              Try Again
+            </button>
+
+            <Link
+              href="/login"
+              className="w-full px-6 py-3 bg-[#3D444C] text-[#E7E3D8] rounded-lg hover:bg-[#994D35] transition-colors font-semibold flex items-center justify-center gap-2"
+            >
+              <FaKey />
+              Go to Login
+            </Link>
+
+            <button
+              onClick={() => router.push("/")}
+              className="w-full px-6 py-3 border-2 border-[#994D35] text-[#994D35] rounded-lg hover:bg-[#994D35] hover:text-white transition-colors font-semibold"
+            >
+              Go Home
+            </button>
+          </div>
         </div>
       </div>
     );
