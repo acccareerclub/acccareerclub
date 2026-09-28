@@ -8,7 +8,9 @@ import cloudinary from "../../../../lib/cloudinary";
 
 export const runtime = "nodejs";
 
-// ---------- Helpers (shared with create) ----------
+// =====================================================================
+// Helpers — shared with create route
+// =====================================================================
 const slugify = (str = "") =>
   String(str)
     .toLowerCase()
@@ -59,7 +61,90 @@ const uploadToCloudinary = (file, folder = "articles") => {
   );
 };
 
-// ---------- Auth guard ----------
+// =====================================================================
+// Helpers — Cloudinary cleanup
+// =====================================================================
+
+/**
+ * Extract the Cloudinary public_id from a full secure URL.
+ * Examples:
+ *   .../upload/v1790448939/DefaultThumnailArticle_wh2voa.jpg
+ *     → "DefaultThumnailArticle_wh2voa"
+ *   .../upload/v1234567890/articles/thumbnails/abc123.jpg
+ *     → "articles/thumbnails/abc123"
+ */
+const extractPublicId = (url) => {
+  if (!url || typeof url !== "string") return null;
+  try {
+    const match = url.match(
+      /\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-zA-Z0-9]+)?(?:\?.*)?$/,
+    );
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Extract every Cloudinary public_id referenced inside an HTML string.
+ * Looks at src="..." and data-mce-src="..." attributes.
+ */
+const extractPublicIdsFromHtml = (html = "") => {
+  const ids = new Set();
+  if (!html) return ids;
+  const srcRegex = /(?:src|data-mce-src)=["']([^"']+)["']/gi;
+  let match;
+  while ((match = srcRegex.exec(html)) !== null) {
+    const url = match[1];
+    if (url.includes("res.cloudinary.com")) {
+      const pid = extractPublicId(url);
+      if (pid) ids.add(pid);
+    }
+  }
+  return ids;
+};
+
+/**
+ * Delete a single Cloudinary asset. Never throws — returns true/false.
+ */
+const deleteCloudinaryAsset = async (publicId) => {
+  if (!publicId) return false;
+  try {
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "image",
+      invalidate: true, // also purge CDN cache
+    });
+    return result.result === "ok" || result.result === "not found";
+  } catch (err) {
+    console.warn(
+      `Failed to delete Cloudinary asset "${publicId}":`,
+      err.message,
+    );
+    return false;
+  }
+};
+
+/**
+ * Check whether a public_id is still referenced by another article.
+ * Uses the filename fragment to be resilient to folder changes.
+ */
+const isStillReferenced = async (publicId, excludeArticleId) => {
+  const urlFragment = publicId.split("/").pop();
+  if (!urlFragment) return false;
+  const count = await Article.countDocuments({
+    _id: { $ne: excludeArticleId },
+    $or: [
+      { thumbnail: { $regex: urlFragment, $options: "i" } },
+      { "author.profilePicture": { $regex: urlFragment, $options: "i" } },
+      { content: { $regex: urlFragment, $options: "i" } },
+    ],
+  });
+  return count > 0;
+};
+
+// =====================================================================
+// Auth guard
+// =====================================================================
 const requireAdmin = async (request) => {
   const token = request.cookies.get("auth_token")?.value;
   if (!token) return { error: "Not authenticated", status: 401 };
@@ -76,7 +161,9 @@ const requireAdmin = async (request) => {
   return { decoded };
 };
 
-// ============= GET: Fetch single article by id =============
+// =====================================================================
+// GET: Fetch single article by id
+// =====================================================================
 export async function GET(request, { params }) {
   try {
     const auth = await requireAdmin(request);
@@ -108,7 +195,9 @@ export async function GET(request, { params }) {
   }
 }
 
-// ============= PUT: Update article =============
+// =====================================================================
+// PUT: Update article
+// =====================================================================
 export async function PUT(request, { params }) {
   try {
     const auth = await requireAdmin(request);
@@ -129,6 +218,14 @@ export async function PUT(request, { params }) {
         { status: 404 },
       );
     }
+
+    // -------- Capture OLD assets BEFORE overwriting --------
+    const oldThumbnailUrl = article.thumbnail;
+    const oldAuthorPicture =
+      article.author?.type === "external"
+        ? article.author.profilePicture
+        : null;
+    const oldContentImageIds = extractPublicIdsFromHtml(article.content);
 
     const formData = await request.formData();
 
@@ -163,10 +260,13 @@ export async function PUT(request, { params }) {
           .filter(Boolean);
 
     // ---- Author (optional — only overwrite if provided) ----
+    let newAuthorPictureUrl = null;
     if (authorType) {
       if (authorType === "internal") {
         const lookupValue = (
-          formData.get("authorLookup") || formData.get("authorId") || ""
+          formData.get("authorLookup") ||
+          formData.get("authorId") ||
+          ""
         )
           .toString()
           .trim();
@@ -186,7 +286,8 @@ export async function PUT(request, { params }) {
             { fullName: { $regex: `^${lookupValue}$`, $options: "i" } },
           ],
         };
-        if (/^[a-f\d]{24}$/i.test(lookupValue)) query.$or.push({ _id: lookupValue });
+        if (/^[a-f\d]{24}$/i.test(lookupValue))
+          query.$or.push({ _id: lookupValue });
 
         const user = await User.findOne(query).lean();
         if (!user) {
@@ -230,6 +331,7 @@ export async function PUT(request, { params }) {
               extPic,
               "articles/authors",
             );
+            newAuthorPictureUrl = profilePicture;
           } catch (err) {
             console.error("Author picture upload failed:", err);
           }
@@ -257,6 +359,7 @@ export async function PUT(request, { params }) {
     }
 
     // ---- Thumbnail (only replace if new file uploaded) ----
+    let newThumbnailUrl = null;
     const thumbnailFile = formData.get("thumbnail");
     if (thumbnailFile && thumbnailFile.size > 0) {
       try {
@@ -264,6 +367,7 @@ export async function PUT(request, { params }) {
           thumbnailFile,
           "articles/thumbnails",
         );
+        newThumbnailUrl = article.thumbnail;
       } catch (err) {
         console.error("Thumbnail upload failed:", err);
         return NextResponse.json(
@@ -294,6 +398,52 @@ export async function PUT(request, { params }) {
 
     await article.save();
 
+    // =========================================================
+    // Post-save cleanup — delete OLD Cloudinary assets that
+    // were replaced during this update.
+    // =========================================================
+    const cleanupTargets = new Set();
+
+    // 1. Old thumbnail replaced?
+    if (
+      newThumbnailUrl &&
+      oldThumbnailUrl &&
+      oldThumbnailUrl !== Article.DEFAULT_THUMBNAIL &&
+      oldThumbnailUrl !== newThumbnailUrl
+    ) {
+      const pid = extractPublicId(oldThumbnailUrl);
+      if (pid) cleanupTargets.add(pid);
+    }
+
+    // 2. Old external author picture replaced?
+    if (
+      newAuthorPictureUrl &&
+      oldAuthorPicture &&
+      oldAuthorPicture !== newAuthorPictureUrl
+    ) {
+      const pid = extractPublicId(oldAuthorPicture);
+      if (pid) cleanupTargets.add(pid);
+    }
+
+    // 3. Old inline images that are no longer present in the new content
+    const newContentImageIds = extractPublicIdsFromHtml(content);
+    for (const oldPid of oldContentImageIds) {
+      if (!newContentImageIds.has(oldPid)) {
+        cleanupTargets.add(oldPid);
+      }
+    }
+
+    // Perform cleanup — skip anything still referenced by another article
+    if (cleanupTargets.size > 0) {
+      await Promise.allSettled(
+        [...cleanupTargets].map(async (pid) => {
+          const stillUsed = await isStillReferenced(pid, article._id);
+          if (stillUsed) return;
+          await deleteCloudinaryAsset(pid);
+        }),
+      );
+    }
+
     return NextResponse.json({
       success: true,
       message: "Article updated successfully",
@@ -320,7 +470,9 @@ export async function PUT(request, { params }) {
   }
 }
 
-// ============= DELETE: Permanent delete =============
+// =====================================================================
+// DELETE: Permanent delete + Cloudinary cleanup
+// =====================================================================
 export async function DELETE(request, { params }) {
   try {
     const auth = await requireAdmin(request);
@@ -334,8 +486,71 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
     await connectToDatabase();
 
+    // ---- 1. Load the article FIRST so we still have its URLs ----
+    const article = await Article.findById(id).lean();
+    if (!article) {
+      return NextResponse.json(
+        { success: false, message: "Article not found" },
+        { status: 404 },
+      );
+    }
+
+    // ---- 2. Collect all Cloudinary public_ids to delete ----
+    const publicIds = new Set();
+
+    // Thumbnail — skip if it's the shared default
+    if (
+      article.thumbnail &&
+      article.thumbnail !== Article.DEFAULT_THUMBNAIL
+    ) {
+      const pid = extractPublicId(article.thumbnail);
+      if (pid) publicIds.add(pid);
+    }
+
+    // External author's picture only — never touch internal (belongs to User)
+    if (
+      article.author?.type === "external" &&
+      article.author?.profilePicture
+    ) {
+      const pid = extractPublicId(article.author.profilePicture);
+      if (pid) publicIds.add(pid);
+    }
+
+    // Inline images inside the content HTML
+    if (article.content) {
+      extractPublicIdsFromHtml(article.content).forEach((pid) =>
+        publicIds.add(pid),
+      );
+    }
+
+    // ---- 3. Delete from Cloudinary (skip anything still referenced) ----
+    let deletedCount = 0;
+    let skippedCount = 0;
+    let failedCount = 0;
+
+    const results = await Promise.allSettled(
+      [...publicIds].map(async (pid) => {
+        const stillUsed = await isStillReferenced(pid, id);
+        if (stillUsed) return "skipped";
+        const ok = await deleteCloudinaryAsset(pid);
+        return ok ? "deleted" : "failed";
+      }),
+    );
+
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        if (r.value === "deleted") deletedCount++;
+        else if (r.value === "skipped") skippedCount++;
+        else failedCount++;
+      } else {
+        failedCount++;
+      }
+    }
+
+    // ---- 4. Delete the article document ----
     const deleted = await Article.findByIdAndDelete(id);
     if (!deleted) {
+      // Extremely rare — the doc vanished between step 1 and step 4
       return NextResponse.json(
         { success: false, message: "Article not found" },
         { status: 404 },
@@ -345,6 +560,12 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({
       success: true,
       message: "Article deleted permanently",
+      cloudinary: {
+        attempted: publicIds.size,
+        deleted: deletedCount,
+        skipped: skippedCount,
+        failed: failedCount,
+      },
     });
   } catch (error) {
     console.error("❌ Delete article error:", error);

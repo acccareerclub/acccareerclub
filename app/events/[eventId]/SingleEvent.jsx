@@ -557,22 +557,35 @@ const AchieversSection = ({ achievers }) => {
       <div className="space-y-5">
         {sortedKeys.map((pos) => (
           <div key={pos}>
+            {/* Position heading (e.g. "1st Place") */}
             <p
-              className="text-xs font-bold uppercase tracking-widest mb-2"
+              className="text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2"
               style={{ color: "#D3A16D" }}
             >
+              <FaCrown className="text-[#D3A16D]" />
               {pos}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+            {/* Rows: badge → name → institution */}
+            <div className="space-y-2">
               {grouped[pos].map((a, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-2 bg-white/5 border border-[#D3A16D]/30 rounded-lg px-3 py-2"
+                  className="flex items-center gap-3 bg-white/5 border border-[#D3A16D]/30 rounded-lg px-3 py-2.5 hover:bg-white/10 transition-colors"
                 >
-                  <FaCrown className="text-[#D3A16D] text-sm flex-shrink-0" />
-                  <span className="font-semibold truncate">{a.name}</span>
+                  {/* Rank badge */}
+                  <span className="shrink-0 inline-flex items-center justify-center min-w-[42px] px-2 py-1 rounded-md bg-[#D3A16D] text-[#3D444C] text-xs font-extrabold uppercase tracking-wide">
+                    {a.position || "—"}
+                  </span>
+
+                  {/* Name */}
+                  <span className="font-semibold text-[#E7E3D8] truncate flex-1 min-w-0">
+                    {a.name}
+                  </span>
+
+                  {/* Institution */}
                   {a.institution && (
-                    <span className="text-xs text-[#E7E3D8]/60 truncate ml-auto">
+                    <span className="text-xs text-[#E7E3D8]/60 truncate max-w-[45%] text-right hidden sm:block">
                       {a.institution}
                     </span>
                   )}

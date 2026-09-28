@@ -6,6 +6,8 @@ import CarosolSectors from "./components/home/CarosolSectors";
 import HomeFeatured from "./components/home/HomeFeatured";
 import HomeEvents from "./components/home/HomeEvent";
 import HomeSessions from "./components/home/HomeSessions";
+import HomeArticles from "./components/home/HomeArticles";
+import HomeJobs from "./components/home/HomeJobs";
 
 export const metadata = {
   title: {
@@ -140,6 +142,12 @@ const Home = () => {
       </div>
       <div>
         <HomeSessions/>
+      </div>
+      <div>
+        <HomeArticles/>
+      </div>
+      <div>
+        <HomeJobs/>
       </div>
       <FacebookEmbaded />
     </>
