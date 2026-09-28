@@ -26,7 +26,6 @@ export async function getArticleBySlug(slug) {
   const article = await Article.findOne({
     slug: String(slug).toLowerCase(),
     status: "published",
-    isDeleted: false,
   }).lean();
 
   if (!article) return null;
@@ -38,7 +37,6 @@ export async function getArticleBySlug(slug) {
     Article.find({
       _id: { $ne: article._id },
       status: "published",
-      isDeleted: false,
       category: article.category,
     })
       .select(
@@ -51,7 +49,6 @@ export async function getArticleBySlug(slug) {
       ? Article.find({
           _id: { $ne: article._id },
           status: "published",
-          isDeleted: false,
           tags: { $in: tagList },
         })
         .select(
@@ -77,7 +74,6 @@ export async function getArticleBySlug(slug) {
     const latest = await Article.find({
       _id: { $ne: article._id, $nin: related.map((r) => r._id) },
       status: "published",
-      isDeleted: false,
     })
       .select(
         "title slug thumbnail category author.fullName author.type publishedAt createdAt",
@@ -96,7 +92,6 @@ export async function getArticleBySlug(slug) {
   // ---------- Categories ----------
   const categories = await Article.distinct("category", {
     status: "published",
-    isDeleted: false,
   });
 
   return {

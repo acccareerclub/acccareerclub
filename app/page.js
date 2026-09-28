@@ -4,6 +4,8 @@ import FacebookEmbaded from "./components/home/FacebookEmbaded";
 import HomeNotice from "./components/home/HomeNotice";
 import CarosolSectors from "./components/home/CarosolSectors";
 import HomeFeatured from "./components/home/HomeFeatured";
+import HomeEvents from "./components/home/HomeEvent";
+import HomeSessions from "./components/home/HomeSessions";
 
 export const metadata = {
   title: {
@@ -132,6 +134,12 @@ const Home = () => {
       </div>
       <div className="w-full mt-7">
         <CarosolSectors />
+      </div>
+      <div>
+        <HomeEvents/>
+      </div>
+      <div>
+        <HomeSessions/>
       </div>
       <FacebookEmbaded />
     </>

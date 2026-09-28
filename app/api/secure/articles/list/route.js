@@ -40,7 +40,7 @@ export async function GET(request) {
     );
     const skip = (page - 1) * limit;
 
-    const query = { isDeleted: false };
+    const query = {};
     if (status && status !== "all") query.status = status;
     if (category && category !== "all") query.category = category;
     if (search) {

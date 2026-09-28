@@ -96,13 +96,6 @@ const ArticleSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
-
-    // ---------- Soft delete ----------
-    isDeleted: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
   },
   {
     timestamps: true, // adds createdAt + updatedAt

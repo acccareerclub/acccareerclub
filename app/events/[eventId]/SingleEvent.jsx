@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useAuth } from "@/app/context/AuthContext";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import {
   FaArrowLeft,
   FaCalendar,
@@ -38,8 +39,7 @@ const SingleEvent = ({ eventId }) => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  console.log(event);
+  const router = useRouter();
 
   // Feedback
   const [rating, setRating] = useState(5);
@@ -242,12 +242,13 @@ const SingleEvent = ({ eventId }) => {
           <p className="text-[#3D444C]/60 mb-6">
             {error || "The event you're looking for doesn't exist."}
           </p>
-          <Link
-            href="/events"
+          <button
+            type="button"
+            onClick={() => router.back()}
             className="inline-flex items-center gap-2 bg-[#994D35] text-white px-6 py-3 rounded-lg hover:bg-[#3D444C] transition-colors font-medium"
           >
-            <FaArrowLeft className="text-sm" /> Back to Events
-          </Link>
+            <FaArrowLeft className="text-sm" /> Back
+          </button>
         </div>
       </div>
     );
@@ -272,12 +273,13 @@ const SingleEvent = ({ eventId }) => {
   return (
     <div className="min-h-screen bg-[#E7E3D8] py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
-        <Link
-          href="/events"
+        <button
+          type="button"
+          onClick={() => router.back()}
           className="inline-flex items-center gap-2 text-[#3D444C] hover:text-[#994D35] transition-colors mb-6 font-medium"
         >
-          <FaArrowLeft className="text-sm" /> Back to Events
-        </Link>
+          <FaArrowLeft className="text-sm" /> Back
+        </button>
 
         {/* HERO — split layout: image on top, info card below */}
         <div className="mb-8 rounded-2xl overflow-hidden shadow-xl border border-[#3D444C]/10 bg-white">

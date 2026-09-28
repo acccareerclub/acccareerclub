@@ -29,7 +29,6 @@ export async function GET(request) {
     // ---- Build query ----
     const query = {
       status: "published",
-      isDeleted: false,
     };
 
     if (category && category !== "all") query.category = category;
@@ -66,7 +65,6 @@ export async function GET(request) {
     // ---- Distinct categories for filter UI ----
     const categories = await Article.distinct("category", {
       status: "published",
-      isDeleted: false,
     });
 
     return NextResponse.json(

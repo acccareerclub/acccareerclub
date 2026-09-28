@@ -90,7 +90,7 @@ export async function GET(request, { params }) {
     const { id } = await params;
     await connectToDatabase();
 
-    const article = await Article.findOne({ _id: id, isDeleted: false }).lean();
+    const article = await Article.findOne({ _id: id }).lean();
     if (!article) {
       return NextResponse.json(
         { success: false, message: "Article not found" },
@@ -122,7 +122,7 @@ export async function PUT(request, { params }) {
     const { id } = await params;
     await connectToDatabase();
 
-    const article = await Article.findOne({ _id: id, isDeleted: false });
+    const article = await Article.findOne({ _id: id });
     if (!article) {
       return NextResponse.json(
         { success: false, message: "Article not found" },
@@ -320,7 +320,7 @@ export async function PUT(request, { params }) {
   }
 }
 
-// ============= DELETE: Soft delete =============
+// ============= DELETE: Permanent delete =============
 export async function DELETE(request, { params }) {
   try {
     const auth = await requireAdmin(request);
@@ -334,31 +334,8 @@ export async function DELETE(request, { params }) {
     const { id } = await params;
     await connectToDatabase();
 
-    const { searchParams } = new URL(request.url);
-    const hard = searchParams.get("hard") === "true";
-
-    if (hard) {
-      // Permanent delete
-      const deleted = await Article.findByIdAndDelete(id);
-      if (!deleted) {
-        return NextResponse.json(
-          { success: false, message: "Article not found" },
-          { status: 404 },
-        );
-      }
-      return NextResponse.json({
-        success: true,
-        message: "Article permanently deleted",
-      });
-    }
-
-    // Soft delete (default)
-    const article = await Article.findByIdAndUpdate(
-      id,
-      { isDeleted: true, status: "archived" },
-      { new: true },
-    );
-    if (!article) {
+    const deleted = await Article.findByIdAndDelete(id);
+    if (!deleted) {
       return NextResponse.json(
         { success: false, message: "Article not found" },
         { status: 404 },
@@ -367,7 +344,7 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({
       success: true,
-      message: "Article deleted",
+      message: "Article deleted permanently",
     });
   } catch (error) {
     console.error("❌ Delete article error:", error);
