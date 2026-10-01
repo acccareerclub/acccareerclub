@@ -987,28 +987,12 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
 
       {/* ============== STICKY FOOTER ============== */}
       <div className="fixed bottom-0 left-0 right-0 bg-[#3D444C] border-t border-[#D3A16D]/30 shadow-2xl z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
-          <div className="text-[#E7E3D8] text-sm flex flex-wrap gap-x-4 gap-y-1">
-            <span>
-              <span className="font-bold text-[#D3A16D]">
-                {selectedIds.length}
-              </span>{" "}
-              total selected
-            </span>
-            {initialAttendees.length > 0 && (
-              <>
-                <span className="hidden sm:inline text-[#E7E3D8]/30">|</span>
-                <span className="text-green-400">
-                  {alreadyMarkedCount} previously marked
-                </span>
-              </>
-            )}
-          </div>
-          <div className="flex gap-3">
+        <div className="mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+          <div className="mx-auto px-1 md:px-4 py-0 md:py-4 flex items-center justify-end gap-4 md:gap-3">
             <button
               onClick={handlePrint}
               disabled={selectedIds.length === 0}
-              className="px-5 py-2.5 bg-white/10 border border-[#D3A16D]/50 text-[#E7E3D8] rounded-lg hover:bg-[#D3A16D] hover:text-[#3D444C] font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-3 md:px-5 py-1 md:py-2.5 bg-white/10 border border-[#D3A16D]/50 text-[#E7E3D8] rounded-lg hover:bg-[#D3A16D] hover:text-[#3D444C] font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               title={
                 selectedIds.length === 0
                   ? "Mark attendees first to print the list"
@@ -1019,14 +1003,14 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
             </button>
             <button
               onClick={onClose}
-              className="px-5 py-2.5 border border-[#E7E3D8]/30 text-[#E7E3D8] rounded-lg hover:bg-white/10 transition-colors font-medium text-sm"
+              className="px-3 md:px-5 py-1 md:py-2.5 border border-[#E7E3D8]/30 text-[#E7E3D8] rounded-lg hover:bg-white/10 transition-colors font-medium text-sm"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={submitting}
-              className="px-6 py-2.5 bg-[#D3A16D] text-[#3D444C] rounded-lg hover:bg-[#994D35] hover:text-white transition-colors font-bold text-sm disabled:opacity-60 flex items-center gap-2"
+              className="px-3 md:px-5 py-1 md:py-2.5 bg-[#D3A16D] text-[#3D444C] rounded-lg hover:bg-[#994D35] hover:text-white transition-colors font-bold text-sm disabled:opacity-60 flex items-center gap-2"
             >
               {submitting ? (
                 <>
@@ -1034,7 +1018,7 @@ const SessionAttendance = ({ session, onClose, onSaved }) => {
                 </>
               ) : (
                 <>
-                  <FaSave /> Save Attendance
+                  <FaSave /> Save
                 </>
               )}
             </button>
