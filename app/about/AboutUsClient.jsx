@@ -6,7 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView, useAnimation } from "framer-motion";
 import {
-  FaGraduationCap,
   FaUsers,
   FaBullseye,
   FaEye,
@@ -14,37 +13,29 @@ import {
   FaHandshake,
   FaRocket,
   FaLightbulb,
-  FaTrophy,
   FaBriefcase,
   FaNetworkWired,
   FaChartLine,
   FaCheckCircle,
   FaQuoteLeft,
   FaArrowRight,
-  FaEnvelope,
-  FaMapMarkerAlt,
-  FaPhone,
-  FaLinkedin,
-  FaFacebook,
-  FaTwitter,
-  FaInstagram,
   FaStar,
   FaAward,
   FaBookOpen,
   FaUserTie,
+  FaBuilding,
+  FaEnvelope,
+  FaGraduationCap,
+  FaChalkboardTeacher,
+  FaVideo,
+  FaUserCircle,
 } from "react-icons/fa";
 import { MdOutlineSchool, MdOutlineEmojiEvents } from "react-icons/md";
 import Logo from "../assets/logo/Careerclublogo.png";
 
-// Stats data
-const STATS = [
-  { icon: FaUsers, label: "Active Members", value: "500+", color: "#994D35" },
-  { icon: FaBriefcase, label: "Jobs Posted", value: "1200+", color: "#D3A16D" },
-  { icon: FaBuilding, label: "Partner Companies", value: "50+", color: "#3D444C" },
-  { icon: MdOutlineEmojiEvents, label: "Events Hosted", value: "30+", color: "#994D35" },
-];
-
+// ─────────────────────────────────────────────────────────────
 // Values data
+// ─────────────────────────────────────────────────────────────
 const VALUES = [
   {
     icon: FaBullseye,
@@ -69,7 +60,9 @@ const VALUES = [
   },
 ];
 
+// ─────────────────────────────────────────────────────────────
 // What we offer
+// ─────────────────────────────────────────────────────────────
 const SERVICES = [
   {
     icon: FaBriefcase,
@@ -109,64 +102,43 @@ const SERVICES = [
   },
 ];
 
-// Team members
-const TEAM = [
-  {
-    name: "Md. Rafiqul Islam",
-    role: "Club Advisor",
-    bio: "Faculty advisor with 15+ years of experience in student development.",
-    avatar: "RI",
-  },
-  {
-    name: "Ahmed Hassan",
-    role: "President",
-    bio: "Leading the club with passion and vision for student success.",
-    avatar: "AH",
-  },
-  {
-    name: "Fatima Khan",
-    role: "Vice President",
-    bio: "Coordinating activities and ensuring smooth club operations.",
-    avatar: "FK",
-  },
-  {
-    name: "Tanvir Ahmed",
-    role: "IT Secretary",
-    bio: "Managing our digital platform and technological initiatives.",
-    avatar: "TA",
-  },
-];
-
-// Timeline/Milestones
+// ─────────────────────────────────────────────────────────────
+// Timeline / Milestones
+// ─────────────────────────────────────────────────────────────
 const TIMELINE = [
   {
-    year: "2020",
+    year: "2025",
+    title: "Club Foundation Initiated",
+    description:
+      "By that time, few students took initiative to establish the club.",
+  },
+  {
+    year: "2026",
     title: "Club Founded",
-    description: "ACC Career Club was established with a vision to bridge academia and industry.",
+    description:
+      "ACC Career Club was established with a vision to bridge academia and industry.",
   },
   {
-    year: "2021",
+    year: "2026",
     title: "First Major Event",
-    description: "Successfully organized our first career fair with 20+ companies.",
+    description: "Successfully organized our first career awareness event.",
   },
   {
-    year: "2022",
+    year: "2026",
     title: "Digital Platform Launch",
-    description: "Launched our online platform connecting students with opportunities.",
+    description:
+      "Launched our online platform connecting students with opportunities.",
   },
   {
-    year: "2023",
-    title: "1000+ Members",
-    description: "Reached a milestone of over 1000 active members in our community.",
-  },
-  {
-    year: "2024",
-    title: "Going National",
-    description: "Expanded our reach and partnerships across Bangladesh.",
+    year: "2026",
+    title: "Going Full Operational",
+    description: "Expanded our reach and partnerships across all students.",
   },
 ];
 
-// Container variants
+// ─────────────────────────────────────────────────────────────
+// Animation variants
+// ─────────────────────────────────────────────────────────────
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -184,16 +156,14 @@ const itemVariants = {
   },
 };
 
-// Section Component
+// Section wrapper that animates in on scroll
 const Section = ({ children, className = "" }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
   const controls = useAnimation();
 
   useEffect(() => {
-    if (isInView) {
-      controls.start("visible");
-    }
+    if (isInView) controls.start("visible");
   }, [isInView, controls]);
 
   return (
@@ -209,21 +179,87 @@ const Section = ({ children, className = "" }) => {
   );
 };
 
-// Need FaBuilding import
-import { FaBuilding } from "react-icons/fa";
-
+// ─────────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────────
 const AboutUsClient = () => {
   const heroRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
 
+  // Dynamic data from API
+  const [stats, setStats] = useState(null);
+  const [team, setTeam] = useState([]);
+  const [loadingData, setLoadingData] = useState(true);
+
+  // Fetch stats + team
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/users/about-page");
+        const data = await res.json();
+        if (!cancelled) {
+          if (data.success) {
+            setStats(data.stats);
+            setTeam(data.team || []);
+          } else {
+            console.error("🔍 API returned success:false", data.message);
+          }
+        }
+      } catch (err) {
+        console.error("🔍 Fetch failed:", err);
+      } finally {
+        if (!cancelled) {
+          setLoadingData(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Build stat cards from API data (with fallback placeholders)
+  const statCards = [
+    {
+      icon: FaUsers,
+      label: "Active Members",
+      value: stats ? `${stats.activeMembers}+` : "—",
+      color: "#994D35",
+    },
+    {
+      icon: FaBriefcase,
+      label: "Jobs Posted",
+      value: stats ? `${stats.postedJobs}+` : "—",
+      color: "#D3A16D",
+    },
+    {
+      icon: FaBuilding,
+      label: "Companies",
+      value: stats ? `${stats.companies}+` : "—",
+      color: "#3D444C",
+    },
+    {
+      icon: MdOutlineEmojiEvents,
+      label: "Events Hosted",
+      value: stats ? `${stats.eventsHosted}+` : "—",
+      color: "#994D35",
+    },
+    {
+      icon: FaVideo,
+      label: "Sessions Conducted",
+      value: stats ? `${stats.sessionsConducted}+` : "—",
+      color: "#D3A16D",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#E7E3D8] via-[#E7E3D8]/90 to-[#D3A16D]/20">
-      {/* ================= HERO SECTION ================= */}
+      {/* ================= HERO ================= */}
       <section
         ref={heroRef}
         className="relative overflow-hidden bg-gradient-to-br from-[#3D444C] via-[#3D444C] to-[#994D35] py-20 md:py-28 px-4 sm:px-6 lg:px-8"
       >
-        {/* Background Pattern */}
         <div
           className="absolute inset-0 opacity-10"
           style={{
@@ -233,7 +269,6 @@ const AboutUsClient = () => {
           }}
         />
 
-        {/* Floating Orbs */}
         <motion.div
           className="absolute w-96 h-96 rounded-full blur-3xl opacity-20"
           style={{
@@ -256,7 +291,6 @@ const AboutUsClient = () => {
         />
 
         <div className="relative z-10 max-w-6xl mx-auto text-center">
-          {/* Logo */}
           <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={heroInView ? { scale: 1, rotate: 0 } : {}}
@@ -270,13 +304,13 @@ const AboutUsClient = () => {
                   alt="ACC Career Club Logo"
                   fill
                   className="object-contain"
+                  sizes="(max-width: 768px) 96px, 128px"
                   priority
                 />
               </div>
             </div>
           </motion.div>
 
-          {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
@@ -289,7 +323,6 @@ const AboutUsClient = () => {
             </span>
           </motion.div>
 
-          {/* Title */}
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={heroInView ? { opacity: 1, y: 0 } : {}}
@@ -309,7 +342,6 @@ const AboutUsClient = () => {
             career dreams through guidance, connections, and opportunities.
           </motion.p>
 
-          {/* Divider */}
           <motion.div
             initial={{ scaleX: 0 }}
             animate={heroInView ? { scaleX: 1 } : {}}
@@ -319,11 +351,11 @@ const AboutUsClient = () => {
         </div>
       </section>
 
-      {/* ================= STATS SECTION ================= */}
+      {/* ================= STATS ================= */}
       <Section className="py-12 md:py-16 px-4 sm:px-6 lg:px-8 -mt-12 relative z-10">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {STATS.map((stat, index) => {
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+            {statCards.map((stat, index) => {
               const Icon = stat.icon;
               return (
                 <motion.div
@@ -336,10 +368,17 @@ const AboutUsClient = () => {
                     className="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
                     style={{ backgroundColor: `${stat.color}15` }}
                   >
-                    <Icon className="text-2xl md:text-3xl" style={{ color: stat.color }} />
+                    <Icon
+                      className="text-2xl md:text-3xl"
+                      style={{ color: stat.color }}
+                    />
                   </div>
-                  <h3 className="text-3xl md:text-4xl font-bold text-[#3D444C] mb-1">
-                    {stat.value}
+                  <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#3D444C] mb-1">
+                    {loadingData ? (
+                      <span className="inline-block w-16 h-8 rounded bg-[#3D444C]/10 animate-pulse" />
+                    ) : (
+                      stat.value
+                    )}
                   </h3>
                   <p className="text-gray-500 text-xs md:text-sm font-medium">
                     {stat.label}
@@ -351,7 +390,113 @@ const AboutUsClient = () => {
         </div>
       </Section>
 
-      {/* ================= OUR STORY SECTION ================= */}
+      {/* ================= MEET THE TEAM ================= */}
+      <Section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#D3A16D]/5 to-transparent">
+        <div className="max-w-7xl mx-auto">
+          <motion.div variants={itemVariants} className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-[#994D35]/10 px-4 py-2 rounded-full mb-4">
+              <FaUserTie className="text-[#994D35]" />
+              <span className="text-[#994D35] text-sm font-semibold">
+                Our Leadership
+              </span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-[#3D444C] mb-4">
+              Meet The <span className="text-[#994D35]">Team</span>
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Passionate individuals dedicated to your success
+            </p>
+            <div className="w-20 h-1 bg-gradient-to-r from-[#D3A16D] to-[#994D35] mx-auto mt-4 rounded-full"></div>
+          </motion.div>
+
+          {/* Loading skeletons */}
+          {loadingData ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-5 shadow-lg animate-pulse"
+                >
+                  <div className="w-full aspect-square rounded-2xl bg-[#3D444C]/10 mb-4" />
+                  <div className="h-4 w-3/4 mx-auto rounded bg-[#3D444C]/10 mb-2" />
+                  <div className="h-3 w-1/2 mx-auto rounded bg-[#3D444C]/10" />
+                </div>
+              ))}
+            </div>
+          ) : team.length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+              <FaUserTie className="text-5xl text-[#3D444C]/20 mx-auto mb-4" />
+              <p className="text-gray-500">Team information coming soon.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {team.map((member, index) => (
+                <motion.div
+                  key={member._id || index}
+                  variants={itemVariants}
+                  whileHover={{ y: -8 }}
+                  className="bg-white rounded-2xl p-4 md:p-5 text-center shadow-lg hover:shadow-2xl transition-all duration-300 group flex flex-col"
+                >
+                  {/* ✅ Big square profile image */}
+                  <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-[#3D444C] to-[#994D35] mb-4 shadow-md group-hover:scale-[1.02] transition-transform duration-300">
+                    {member.profilePicture ? (
+                      <Image
+                        src={member.profilePicture}
+                        alt={member.fullName}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-white text-4xl md:text-5xl font-bold">
+                          {member.fullName?.[0]?.toUpperCase() || "?"}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Role badge */}
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <span className="inline-block w-full text-center bg-[#a77137] text-white text-[10px] md:text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full shadow-md">
+                        {member.roleDisplay}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Name */}
+                  <h3 className="text-sm md:text-base font-bold text-[#3D444C] leading-snug line-clamp-2 mb-1">
+                    {member.fullName}
+                  </h3>
+
+                  {/* Department */}
+                  {member.department && (
+                    <p className="text-[11px] md:text-xs text-gray-500 line-clamp-1 mb-2">
+                      {member.department}
+                    </p>
+                  )}
+
+                  {/* Email — hidden for moderators (member.email is null) */}
+                  {member.email && (
+                    <a
+                      href={`mailto:${member.email}`}
+                      className="mt-auto inline-flex items-center justify-center gap-1.5 text-[10px] md:text-xs text-[#994D35] hover:text-[#3D444C] font-semibold break-all transition-colors"
+                      title={member.email}
+                    >
+                      <FaEnvelope className="shrink-0 text-[10px]" />
+                      <span className="truncate">{member.email}</span>
+                    </a>
+                  )}
+
+                  {/* Spacer for members without email so cards align */}
+                  {!member.email && <div className="mt-auto" />}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Section>
+
+      {/* ================= OUR STORY ================= */}
       <Section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -369,12 +514,11 @@ const AboutUsClient = () => {
               </h2>
               <div className="space-y-4 text-gray-600 leading-relaxed">
                 <p>
-                  ACC Career Club was founded in 2020 with a simple yet powerful
-                  vision: to bridge the gap between academic learning and
-                  professional success. What started as a small initiative by a
-                  group of passionate students has now grown into one of the
-                  most active career development communities at Adamjee
-                  Cantonment College.
+                  ACC Career Club was founded with a simple yet powerful vision:
+                  to bridge the gap between academic learning and professional
+                  success. What started as a small initiative by a group of
+                  passionate students has now grown into one of the most active
+                  career development communities at Adamjee Cantonment College.
                 </p>
                 <p>
                   Our club serves as a platform where students can explore
@@ -384,13 +528,12 @@ const AboutUsClient = () => {
                   regardless of their background or field of study.
                 </p>
                 <p>
-                  Today, we're proud to serve over 500 active members and have
-                  helped countless students land their dream jobs and
+                  Today, we're proud to serve a thriving community of members
+                  and have helped countless students land their dream jobs and
                   internships at leading companies across Bangladesh and beyond.
                 </p>
               </div>
 
-              {/* Key Points */}
               <div className="mt-8 space-y-3">
                 {[
                   "Dedicated career guidance and mentorship",
@@ -427,7 +570,6 @@ const AboutUsClient = () => {
             {/* Right - Timeline */}
             <motion.div variants={itemVariants} className="relative">
               <div className="relative pl-8">
-                {/* Vertical Line */}
                 <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#D3A16D] via-[#994D35] to-transparent"></div>
 
                 {TIMELINE.map((item, index) => (
@@ -439,7 +581,6 @@ const AboutUsClient = () => {
                     viewport={{ once: true }}
                     className="relative mb-8 last:mb-0"
                   >
-                    {/* Dot */}
                     <div className="absolute -left-8 top-1 w-6 h-6 rounded-full bg-white border-4 border-[#994D35] flex items-center justify-center">
                       <div className="w-2 h-2 rounded-full bg-[#D3A16D]"></div>
                     </div>
@@ -453,7 +594,9 @@ const AboutUsClient = () => {
                           {item.title}
                         </h4>
                       </div>
-                      <p className="text-gray-600 text-sm">{item.description}</p>
+                      <p className="text-gray-600 text-sm">
+                        {item.description}
+                      </p>
                     </div>
                   </motion.div>
                 ))}
@@ -463,7 +606,7 @@ const AboutUsClient = () => {
         </div>
       </Section>
 
-      {/* ================= MISSION/VISION/VALUES ================= */}
+      {/* ================= MISSION / VISION / VALUES ================= */}
       <Section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent via-[#D3A16D]/5 to-transparent">
         <div className="max-w-7xl mx-auto">
           <motion.div variants={itemVariants} className="text-center mb-12">
@@ -535,7 +678,6 @@ const AboutUsClient = () => {
                   whileHover={{ y: -6, scale: 1.02 }}
                   className="group bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden"
                 >
-                  {/* Hover gradient */}
                   <div className="absolute inset-0 bg-gradient-to-br from-[#994D35]/5 to-[#D3A16D]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                   <div className="relative z-10">
@@ -556,61 +698,13 @@ const AboutUsClient = () => {
         </div>
       </Section>
 
-      {/* ================= TEAM SECTION ================= */}
-      <Section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#D3A16D]/5 to-transparent">
-        <div className="max-w-7xl mx-auto">
-          <motion.div variants={itemVariants} className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-[#994D35]/10 px-4 py-2 rounded-full mb-4">
-              <FaUserTie className="text-[#994D35]" />
-              <span className="text-[#994D35] text-sm font-semibold">
-                Our Leadership
-              </span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#3D444C] mb-4">
-              Meet The <span className="text-[#994D35]">Team</span>
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Passionate individuals dedicated to your success
-            </p>
-            <div className="w-20 h-1 bg-gradient-to-r from-[#D3A16D] to-[#994D35] mx-auto mt-4 rounded-full"></div>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {TEAM.map((member, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                whileHover={{ y: -8 }}
-                className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-2xl transition-all duration-300 group"
-              >
-                <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-[#3D444C] to-[#994D35] flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <span className="text-white text-2xl font-bold">
-                    {member.avatar}
-                  </span>
-                </div>
-                <h3 className="text-lg font-bold text-[#3D444C] mb-1">
-                  {member.name}
-                </h3>
-                <p className="text-[#994D35] text-sm font-semibold mb-3">
-                  {member.role}
-                </p>
-                <p className="text-gray-500 text-xs leading-relaxed">
-                  {member.bio}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ================= TESTIMONIAL/QUOTE SECTION ================= */}
+      {/* ================= QUOTE ================= */}
       <Section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <motion.div
             variants={itemVariants}
             className="relative bg-gradient-to-br from-[#3D444C] to-[#994D35] rounded-3xl p-8 md:p-12 shadow-2xl overflow-hidden"
           >
-            {/* Background pattern */}
             <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D3A16D] rounded-full blur-3xl"></div>
@@ -628,9 +722,7 @@ const AboutUsClient = () => {
                 </div>
                 <div className="text-left">
                   <p className="text-[#E7E3D8] font-bold">ACC Career Club</p>
-                  <p className="text-[#D3A16D] text-sm">
-                    Empowering Students Since 2020
-                  </p>
+                  <p className="text-[#D3A16D] text-sm">Empowering Students</p>
                 </div>
               </div>
             </div>
@@ -638,7 +730,7 @@ const AboutUsClient = () => {
         </div>
       </Section>
 
-      {/* ================= CTA SECTION ================= */}
+      {/* ================= CTA ================= */}
       <Section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div variants={itemVariants}>

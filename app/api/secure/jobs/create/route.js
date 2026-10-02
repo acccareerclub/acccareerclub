@@ -2,8 +2,10 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/app/lib/mongodb";
 import Job from "@/app/models/Job";
+import User from "@/app/models/User";
 import { getCurrentUser } from "@/app/lib/authUtils";
 import cloudinary from "@/app/lib/cloudinary";
+import { sendJobNotificationEmail } from "@/app/lib/mailsystem";
 
 export const runtime = "nodejs";
 
@@ -97,9 +99,7 @@ export async function POST(request) {
     ).toString();
     const location = (formData.get("location") || "").toString().trim();
     const division = (formData.get("division") || "").toString().trim();
-    const jobDescription = (
-      formData.get("jobDescription") || ""
-    ).toString();
+    const jobDescription = (formData.get("jobDescription") || "").toString();
     const applyLink = (formData.get("applyLink") || "").toString().trim();
     const deadlineRaw = (formData.get("applicationDeadline") || "").toString();
     const isActive = formData.get("isActive") === "true";
@@ -122,13 +122,20 @@ export async function POST(request) {
         { status: 400 },
       );
     }
-    if (!jobDescription || !jobDescription.trim() || jobDescription === "<p></p>") {
+    if (
+      !jobDescription ||
+      !jobDescription.trim() ||
+      jobDescription === "<p></p>"
+    ) {
       return NextResponse.json(
         { success: false, message: "Job description is required" },
         { status: 400 },
       );
     }
-    if (!applyLink && formData.getAll("images").filter((f) => f?.size > 0).length === 0) {
+    if (
+      !applyLink &&
+      formData.getAll("images").filter((f) => f?.size > 0).length === 0
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -193,6 +200,57 @@ export async function POST(request) {
       },
     });
 
+    // ---------- Notify members (only if the job is live) ----------
+    let emailReport = null;
+
+    if (isActive) {
+      try {
+        // Only active members who kept jobMail enabled
+        const recipients = await User.find({
+          isActive: true,
+          jobMail: true,
+          // Only members (skip admins/staff so we don't spam them)
+          role: { $nin: ["modarator"] },
+        })
+          .select("_id fullName email")
+          .lean();
+
+        if (recipients.length > 0) {
+          const recipientEmails = recipients
+            .map((u) => u.email)
+            .filter(Boolean);
+          const recipientIds = recipients.map((u) => u._id.toString());
+
+          if (recipientEmails.length > 0) {
+            emailReport = await sendJobNotificationEmail({
+              jobTitle,
+              jobCategory: category,
+              jobSector: sector,
+              employmentType,
+              location,
+              division,
+              applicationDeadline,
+              applicationMode,
+              applyLink,
+              jobSlug: slug,
+              jobId: job._id.toString(),
+              recipientEmails,
+              recipientIds,
+            });
+
+            console.log(
+              `📧 Job notification sent to ${emailReport.totalRecipients} members`,
+            );
+          }
+        } else {
+          console.log("ℹ️ No recipients with jobMail enabled");
+        }
+      } catch (mailErr) {
+        // Don't fail the request if email sending fails — the job is already created
+        console.error("❌ Job notification email failed:", mailErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Job created successfully",
@@ -202,6 +260,7 @@ export async function POST(request) {
         slug: job.slug,
         isActive: job.isActive,
       },
+      emailsSent: emailReport?.totalRecipients || 0,
     });
   } catch (error) {
     console.error("❌ Create job error:", error);

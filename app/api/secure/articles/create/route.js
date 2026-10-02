@@ -5,6 +5,7 @@ import Article from "../../../../models/Article";
 import User from "../../../../models/User";
 import { getCurrentUser } from "../../../../lib/authUtils";
 import cloudinary from "../../../../lib/cloudinary";
+import { sendArticleNotificationEmail } from "../../../../lib/mailsystem";
 
 // Force Node.js runtime (Cloudinary SDK needs it)
 export const runtime = "nodejs";
@@ -16,9 +17,9 @@ const slugify = (str = "") =>
   String(str)
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "")   // drop punctuation
-    .replace(/[\s_-]+/g, "-")   // spaces → dashes
-    .replace(/^-+|-+$/g, "");   // trim leading/trailing dashes
+    .replace(/[^\w\s-]/g, "") // drop punctuation
+    .replace(/[\s_-]+/g, "-") // spaces → dashes
+    .replace(/^-+|-+$/g, ""); // trim leading/trailing dashes
 
 // Ensure the slug is unique in the DB; append -1, -2, … if taken
 const makeUniqueSlug = async (baseSlug) => {
@@ -130,7 +131,9 @@ export async function POST(request) {
     if (authorType === "internal") {
       // Internal author: look up by studentId / membershipId / email / _id
       const lookupValue = (
-        formData.get("authorLookup") || formData.get("authorId") || ""
+        formData.get("authorLookup") ||
+        formData.get("authorId") ||
+        ""
       )
         .toString()
         .trim();
@@ -139,7 +142,8 @@ export async function POST(request) {
         return NextResponse.json(
           {
             success: false,
-            message: "Author lookup value (student ID, membership ID, email) is required",
+            message:
+              "Author lookup value (student ID, membership ID, email) is required",
           },
           { status: 400 },
         );
@@ -265,6 +269,67 @@ export async function POST(request) {
         : "draft",
     });
 
+    // ---------- Notify members (only if the article is published) ----------
+    let emailReport = null;
+
+    if (article.status === "published") {
+      try {
+        // Only active members who kept article/Newsletter Mail enabled
+        const recipients = await User.find({
+          isActive: true,
+          newsletterMail: true,
+          // Only members (skip admin roles so we don't spam them)
+          role: {
+            $nin: ["modarator"],
+          },
+        })
+          .select("_id fullName email")
+          .lean();
+
+        if (recipients.length > 0) {
+          const recipientEmails = recipients
+            .map((u) => u.email)
+            .filter(Boolean);
+          const recipientIds = recipients.map((u) => u._id.toString());
+
+          if (recipientEmails.length > 0) {
+            // Build a short excerpt from content if none was provided
+            const plainExcerpt = String(content || "")
+              .replace(/<[^>]*>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 200);
+
+            emailReport = await sendArticleNotificationEmail({
+              articleTitle: title,
+              articleCategory: category,
+              articleTags: tagsFromList,
+              articleExcerpt: plainExcerpt,
+              articleSlug: slug,
+              articleId: article._id.toString(),
+              authorName: author.fullName || "",
+              authorDesignation:
+                author.type === "external"
+                  ? author.designation || "Guest Author"
+                  : author.department || "ACC Career Club Member",
+              thumbnailUrl: thumbnailUrl || Article.DEFAULT_THUMBNAIL || "",
+              recipientEmails,
+              recipientIds,
+            });
+
+            console.log(
+              `📧 Article notification sent to ${emailReport.totalRecipients} members`,
+            );
+          }
+        } else {
+          console.log("ℹ️ No recipients with newsletterMail enabled");
+        }
+      } catch (mailErr) {
+        // Don't fail the request if email sending fails — the article is already created
+        console.error("❌ Article notification email failed:", mailErr);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: "Article created successfully",
@@ -276,6 +341,7 @@ export async function POST(request) {
         thumbnail: article.thumbnail,
         publishedAt: article.publishedAt,
       },
+      emailsSent: emailReport?.totalRecipients || 0,
     });
   } catch (error) {
     console.error("❌ Create article error:", error);
