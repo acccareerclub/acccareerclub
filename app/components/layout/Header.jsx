@@ -488,7 +488,7 @@ const Header = () => {
               <div
                 className={`overflow-hidden transition-all duration-300 ease-in-out ${
                   isMobileServicesOpen
-                    ? "max-h-40 opacity-100 mt-1"
+                    ? "max-h-96 opacity-100 mt-1"
                     : "max-h-0 opacity-0"
                 }`}
               >
