@@ -1589,3 +1589,481 @@ export const sendCertificateEmail = async ({
     html,
   });
 };
+
+
+// ==========================================
+// Send "New Job Posted" email to members with jobMail enabled
+// ==========================================
+export const sendJobNotificationEmail = async ({
+  jobTitle,
+  jobCategory,
+  jobSector,
+  employmentType,
+  location,
+  division,
+  applicationDeadline,
+  applicationMode,
+  applyLink,
+  jobSlug,
+  jobId,
+  recipientEmails,
+  recipientIds,
+}) => {
+  const baseUrl = process.env.NEXTAUTH_URL || "https://ccacc.vercel.app";
+  const jobUrl = jobSlug
+    ? `${baseUrl}/jobs/${jobSlug}`
+    : `${baseUrl}/jobs/${jobId}`;
+
+  const subject = `💼 New Job Opportunity: ${jobTitle} — ACC Career Club`;
+
+  // ---------- Format helpers ----------
+  const sectorLabels = {
+    government: "Government",
+    private: "Private",
+    ngo: "NGO",
+    international: "International",
+    autonomous: "Autonomous",
+  };
+
+  const employmentLabels = {
+    "full-time": "Full-time",
+    "part-time": "Part-time",
+    contract: "Contract",
+    internship: "Internship",
+    freelance: "Freelance",
+    temporary: "Temporary",
+  };
+
+  const sectorLabel = sectorLabels[jobSector] || jobSector || "Job";
+  const employmentLabel =
+    employmentLabels[employmentType] || employmentType || "";
+
+  const isWalkIn = applicationMode === "walk-in";
+
+  const formattedDeadline = applicationDeadline
+    ? new Date(applicationDeadline).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>New Job Opportunity</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: #f0f0f0;
+          -webkit-text-size-adjust: 100%;
+        }
+        @media only screen and (max-width: 600px) {
+          .container { border-radius: 0 !important; margin: 0 8px !important; }
+          .header { padding: 24px 16px !important; }
+          .header h1 { font-size: 20px !important; }
+          .content { padding: 20px 16px 24px !important; }
+          .btn { display: block !important; padding: 13px 20px !important; font-size: 15px !important; }
+        }
+      </style>
+    </head>
+    <body style="margin:0;padding:0;background-color:#f0f0f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f0f0;padding:16px 8px;">
+        <tr>
+          <td align="center">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+
+              <!-- Header -->
+              <tr>
+                <td style="background:linear-gradient(135deg, #3D444C, #994D35);padding:32px 24px;text-align:center;">
+                  <div style="font-size:44px;line-height:1;margin-bottom:8px;">💼</div>
+                  <h1 style="color:#E7E3D8;margin:0;font-size:24px;font-weight:700;letter-spacing:0.5px;">
+                    New Job Opportunity
+                  </h1>
+                  <p style="color:#D3A16D;margin:8px 0 0 0;font-size:14px;">
+                    ACC Career Club • Adamjee Cantonment College
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style="padding:30px 24px 32px;">
+                  <p style="color:#4B5563;font-size:15px;line-height:1.8;margin:0 0 16px 0;">
+                    A new job opportunity has just been posted and it matches your career interests.
+                  </p>
+
+                  <!-- Job Card -->
+                  <div style="background:linear-gradient(135deg, #F9FAFB, #E7E3D8);border-left:4px solid #D3A16D;border-radius:12px;padding:22px 20px;margin:0 0 24px 0;">
+                    <p style="color:#6B7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;margin:0 0 10px 0;">
+                      Position
+                    </p>
+                    <p style="color:#3D444C;font-size:20px;font-weight:800;margin:0 0 14px 0;line-height:1.3;">
+                      ${jobTitle}
+                    </p>
+
+                    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;">
+                      ${
+                        jobSector
+                          ? `<tr>
+                              <td style="padding:5px 0;color:#6B7280;width:40%;">Sector</td>
+                              <td style="padding:5px 0;color:#3D444C;font-weight:600;">${sectorLabel}</td>
+                            </tr>`
+                          : ""
+                      }
+                      ${
+                        jobCategory
+                          ? `<tr>
+                              <td style="padding:5px 0;color:#6B7280;">Category</td>
+                              <td style="padding:5px 0;color:#3D444C;font-weight:500;">${jobCategory}</td>
+                            </tr>`
+                          : ""
+                      }
+                      ${
+                        employmentLabel
+                          ? `<tr>
+                              <td style="padding:5px 0;color:#6B7280;">Type</td>
+                              <td style="padding:5px 0;color:#3D444C;font-weight:500;">${employmentLabel}</td>
+                            </tr>`
+                          : ""
+                      }
+                      ${
+                        location || division
+                          ? `<tr>
+                              <td style="padding:5px 0;color:#6B7280;">Location</td>
+                              <td style="padding:5px 0;color:#3D444C;font-weight:500;">${location || "—"}${division ? ` • ${division}` : ""}</td>
+                            </tr>`
+                          : ""
+                      }
+                      ${
+                        formattedDeadline
+                          ? `<tr>
+                              <td style="padding:5px 0;color:#6B7280;">${isWalkIn ? "Walk-in Date" : "Apply Before"}</td>
+                              <td style="padding:5px 0;color:#994D35;font-weight:700;">${formattedDeadline}</td>
+                            </tr>`
+                          : ""
+                      }
+                    </table>
+                  </div>
+
+                  <!-- Walk-in / Apply note -->
+                  ${
+                    isWalkIn
+                      ? `
+                    <div style="background:#FEF3C7;border-left:4px solid #F59E0B;border-radius:8px;padding:14px 18px;margin:0 0 24px 0;">
+                      <p style="margin:0;color:#92400E;font-size:13px;line-height:1.6;">
+                        <strong>🚶 Walk-in Interview:</strong> Candidates should appear at the venue on the specified date with their CV and required documents.
+                      </p>
+                    </div>
+                  `
+                      : ""
+                  }
+
+                  <!-- CTA Button -->
+                  <div style="text-align:center;margin:28px 0;">
+                    <a href="${jobUrl}"
+                       style="display:inline-block;background:#994D35;color:#ffffff;padding:14px 40px;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(153,77,53,0.3);">
+                      View Job Details →
+                    </a>
+                  </div>
+
+                  ${
+                    applyLink
+                      ? `
+                    <p style="color:#6B7280;font-size:12px;text-align:center;margin:0 0 24px 0;line-height:1.6;">
+                      Or apply directly at<br>
+                      <a href="${applyLink}" style="color:#994D35;text-decoration:underline;word-break:break-all;">${applyLink}</a>
+                    </p>
+                  `
+                      : ""
+                  }
+
+                  <p style="color:#4B5563;font-size:14px;line-height:1.8;margin:24px 0 8px 0;">
+                    Best of luck with your application!
+                  </p>
+                  <p style="color:#3D444C;font-size:14px;font-weight:600;margin:8px 0 0 0;">
+                    — ACC Career Club Team
+                  </p>
+
+                  <!-- Preference note -->
+                  <div style="background:#F9FAFB;border-radius:10px;padding:16px 20px;margin:24px 0 0 0;border-left:4px solid #D3A16D;">
+                    <p style="margin:0;color:#6B7280;font-size:13px;line-height:1.6;">
+                      💡 You're receiving this email because you have <strong>Job Mail</strong> enabled.
+                      You can turn it off anytime in your account settings.
+                    </p>
+                  </div>
+
+                  <!-- Footer -->
+                  <div style="text-align:center;padding:24px 0 0 0;border-top:1px solid #E5E7EB;margin-top:24px;">
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      This is an automated message from ACC Career Club.
+                    </p>
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      © ${new Date().getFullYear()} ACC Career Club - Adamjee Cantonment College
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  // Batch send in chunks of 50 to avoid provider limits
+  const chunkSize = 50;
+  const results = [];
+
+  for (let i = 0; i < recipientEmails.length; i += chunkSize) {
+    const chunk = recipientEmails.slice(i, i + chunkSize);
+    const result = await sendEmail({
+      to: chunk,
+      subject,
+      html,
+    });
+    results.push(result);
+  }
+
+  const allSuccess = results.every((r) => r.success);
+
+  return {
+    success: allSuccess,
+    totalRecipients: recipientEmails.length,
+    results,
+  };
+};
+
+// ==========================================
+// Send "New Article Published" email to members with newsletterMail enabled
+// ==========================================
+export const sendArticleNotificationEmail = async ({
+  articleTitle,
+  articleCategory,
+  articleTags,
+  articleExcerpt,
+  articleSlug,
+  articleId,
+  authorName,
+  authorDesignation,
+  thumbnailUrl,
+  recipientEmails,
+  recipientIds,
+}) => {
+  const baseUrl = process.env.NEXTAUTH_URL || "https://ccacc.vercel.app";
+  const articleUrl = articleSlug
+    ? `${baseUrl}/articles/${articleSlug}`
+    : `${baseUrl}/articles/${articleId}`;
+
+  const subject = `📰 New Article: ${articleTitle} — ACC Career Club`;
+
+  // Short excerpt — pull from provided excerpt, else truncate
+  const excerpt =
+    articleExcerpt?.trim().slice(0, 200) ||
+    "Click through to read the full article.";
+
+  // Strip HTML entities for safety in email body
+  const cleanExcerpt = excerpt
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const hasTags = Array.isArray(articleTags) && articleTags.length > 0;
+  const tagsSlice = hasTags ? articleTags.slice(0, 4) : [];
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>New Article</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: #f0f0f0;
+          -webkit-text-size-adjust: 100%;
+        }
+        @media only screen and (max-width: 600px) {
+          .container { border-radius: 0 !important; margin: 0 8px !important; }
+          .header { padding: 24px 16px !important; }
+          .header h1 { font-size: 20px !important; }
+          .content { padding: 20px 16px 24px !important; }
+          .btn { display: block !important; padding: 13px 20px !important; font-size: 15px !important; }
+          .cover { height: 160px !important; }
+        }
+      </style>
+    </head>
+    <body style="margin:0;padding:0;background-color:#f0f0f0;">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0f0f0;padding:16px 8px;">
+        <tr>
+          <td align="center">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+
+              <!-- Header -->
+              <tr>
+                <td style="background:linear-gradient(135deg, #3D444C, #994D35);padding:32px 24px;text-align:center;">
+                  <div style="font-size:44px;line-height:1;margin-bottom:8px;">📰</div>
+                  <h1 style="color:#E7E3D8;margin:0;font-size:24px;font-weight:700;letter-spacing:0.5px;">
+                    New Article Published
+                  </h1>
+                  <p style="color:#D3A16D;margin:8px 0 0 0;font-size:14px;">
+                    ACC Career Club • Adamjee Cantonment College
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Optional cover image -->
+              ${
+                thumbnailUrl
+                  ? `
+              <tr>
+                <td style="padding:0;">
+                  <div style="width:100%;height:220px;background:#E7E3D8;overflow:hidden;position:relative;">
+                    <img src="${thumbnailUrl}" alt="${articleTitle}" style="width:100%;height:100%;object-fit:cover;display:block;" />
+                  </div>
+                </td>
+              </tr>
+              `
+                  : ""
+              }
+
+              <!-- Body -->
+              <tr>
+                <td style="padding:30px 24px 32px;">
+
+                  <!-- Category chip -->
+                  ${
+                    articleCategory
+                      ? `
+                  <div style="margin:0 0 12px 0;">
+                    <span style="display:inline-block;background:#E7E3D8;color:#994D35;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">
+                      ${articleCategory}
+                    </span>
+                  </div>
+                  `
+                      : ""
+                  }
+
+                  <!-- Title -->
+                  <h2 style="color:#3D444C;font-size:22px;font-weight:800;margin:0 0 14px 0;line-height:1.3;">
+                    ${articleTitle}
+                  </h2>
+
+                  <!-- Author line -->
+                  ${
+                    authorName
+                      ? `
+                  <p style="color:#6B7280;font-size:13px;margin:0 0 18px 0;">
+                    ✍️ By <strong style="color:#3D444C;">${authorName}</strong>${
+                      authorDesignation
+                        ? `<span style="color:#994D35;font-weight:500;"> • ${authorDesignation}</span>`
+                        : ""
+                    }
+                  </p>
+                  `
+                      : ""
+                  }
+
+                  <!-- Divider -->
+                  <div style="width:50px;height:3px;background:linear-gradient(90deg,#D3A16D,#994D35);margin:0 0 20px 0;border-radius:2px;"></div>
+
+                  <!-- Excerpt -->
+                  <p style="color:#4B5563;font-size:15px;line-height:1.8;margin:0 0 20px 0;">
+                    ${cleanExcerpt}
+                  </p>
+
+                  <!-- Tags -->
+                  ${
+                    hasTags
+                      ? `
+                  <div style="margin:0 0 24px 0;">
+                    ${tagsSlice
+                      .map(
+                        (t) => `
+                      <span style="display:inline-block;background:#F9FAFB;color:#3D444C;border:1px solid #E5E7EB;padding:3px 10px;border-radius:14px;font-size:11px;font-weight:500;margin:0 6px 6px 0;">
+                        #${t}
+                      </span>
+                    `,
+                      )
+                      .join("")}
+                  </div>
+                  `
+                      : ""
+                  }
+
+                  <!-- CTA Button -->
+                  <div style="text-align:center;margin:28px 0;">
+                    <a href="${articleUrl}"
+                       style="display:inline-block;background:#994D35;color:#ffffff;padding:14px 40px;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;box-shadow:0 4px 12px rgba(153,77,53,0.3);">
+                      Read Full Article →
+                    </a>
+                  </div>
+
+                  <p style="color:#4B5563;font-size:14px;line-height:1.8;margin:24px 0 8px 0;">
+                    Happy reading!
+                  </p>
+                  <p style="color:#3D444C;font-size:14px;font-weight:600;margin:8px 0 0 0;">
+                    — ACC Career Club Team
+                  </p>
+
+                  <!-- Preference note -->
+                  <div style="background:#F9FAFB;border-radius:10px;padding:16px 20px;margin:24px 0 0 0;border-left:4px solid #D3A16D;">
+                    <p style="margin:0;color:#6B7280;font-size:13px;line-height:1.6;">
+                      💡 You're receiving this email because you have <strong>Articles</strong> notifications enabled.
+                      You can turn it off anytime in your account settings.
+                    </p>
+                  </div>
+
+                  <!-- Footer -->
+                  <div style="text-align:center;padding:24px 0 0 0;border-top:1px solid #E5E7EB;margin-top:24px;">
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      This is an automated message from ACC Career Club.
+                    </p>
+                    <p style="color:#9CA3AF;font-size:11px;margin:4px 0;line-height:1.5;">
+                      © ${new Date().getFullYear()} ACC Career Club - Adamjee Cantonment College
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  // Batch send in chunks of 50 to avoid provider limits
+  const chunkSize = 50;
+  const results = [];
+
+  for (let i = 0; i < recipientEmails.length; i += chunkSize) {
+    const chunk = recipientEmails.slice(i, i + chunkSize);
+    const result = await sendEmail({
+      to: chunk,
+      subject,
+      html,
+    });
+    results.push(result);
+  }
+
+  const allSuccess = results.every((r) => r.success);
+
+  return {
+    success: allSuccess,
+    totalRecipients: recipientEmails.length,
+    results,
+  };
+};
