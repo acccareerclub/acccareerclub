@@ -208,7 +208,7 @@ const CertificateSchema = new mongoose.Schema(
     },
     generationMethod: {
       type: String,
-      enum: ["individual", "selective", "bulk", "external"],
+      enum: ["individual", "selective", "bulk", "external", "custom-batch"],
       default: "individual",
     },
     published:{

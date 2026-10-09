@@ -48,6 +48,7 @@ import ExperienceModal from "../../components/ExperienceModal";
 import AchievementsModal from "../../components/AchievementsModal";
 import ModernCVGenerator from "../../components/ModernCVGenerator";
 import ClassicCVGenerator from "../../components/ClassicCVGenerator";
+import UserAttendanceSummary from "../../components/UserAttendanceSummary";
 
 // Department options (same as signup)
 const DEPARTMENTS = [
@@ -974,47 +975,6 @@ const ProfileClient = () => {
                 : "View member profile information"}
             </p>
           </div>
-          {
-            <div className="flex gap-3">
-              {!isEditing ? (
-                <button
-                  onClick={() => {
-                    const p = user?.personalInfo?.presentAddress || "";
-                    const q = user?.personalInfo?.permanentAddress || "";
-                    setSameAsPresent(!!p && p === q);
-                    setIsEditing(true);
-                  }}
-                  className="flex items-center gap-2 bg-[#994D35] text-white px-5 py-2.5 rounded-lg hover:bg-[#D3A16D] transition-all duration-300 hover:scale-105 shadow-md"
-                >
-                  <FaEdit />
-                  <span>Edit Profile</span>
-                </button>
-              ) : (
-                <div className="hidden lg:flex gap-3">
-                  <button
-                    onClick={handleCancel}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 bg-gray-300 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-400 transition-all duration-300"
-                  >
-                    <FaTimes />
-                    <span>Cancel</span>
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex items-center gap-2 bg-[#3D444C] text-[#E7E3D8] px-5 py-2.5 rounded-lg hover:bg-[#994D35] transition-all duration-300 hover:scale-105 shadow-md disabled:opacity-70"
-                  >
-                    {isSaving ? (
-                      <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-                    ) : (
-                      <FaSave />
-                    )}
-                    <span>{isSaving ? "Saving..." : "Save Changes"}</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          }
         </div>
 
         {/* Profile Completion Bar — click a missing chip to jump */}
@@ -1024,9 +984,10 @@ const ProfileClient = () => {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Profile Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden sticky top-[2px]">
+          {/* Left Column - Profile Card + Attendance Summary (below) */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* ---------- Profile Card ---------- */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
               <div
                 id="profile-photo"
                 className="h-24 sm:h-32 bg-gradient-to-r from-[#3D444C] to-[#994D35] relative"
@@ -1057,30 +1018,28 @@ const ProfileClient = () => {
                       </div>
                     </div>
                     {/* Upload button */}
-                    {
-                      <div className="absolute -bottom-1 -right-1">
-                        <label className="cursor-pointer">
-                          <div
-                            className={`w-8 h-8 rounded-full bg-[#994D35] text-white flex items-center justify-center shadow-md hover:bg-[#D3A16D] transition-colors duration-200 ${
-                              uploading ? "opacity-70 cursor-not-allowed" : ""
-                            }`}
-                          >
-                            {uploading ? (
-                              <FaSpinner className="animate-spin text-xs" />
-                            ) : (
-                              <FaCamera className="text-xs" />
-                            )}
-                          </div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                            disabled={uploading}
-                          />
-                        </label>
-                      </div>
-                    }
+                    <div className="absolute -bottom-1 -right-1">
+                      <label className="cursor-pointer">
+                        <div
+                          className={`w-8 h-8 rounded-full bg-[#994D35] text-white flex items-center justify-center shadow-md hover:bg-[#D3A16D] transition-colors duration-200 ${
+                            uploading ? "opacity-70 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          {uploading ? (
+                            <FaSpinner className="animate-spin text-xs" />
+                          ) : (
+                            <FaCamera className="text-xs" />
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={uploading}
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1303,10 +1262,54 @@ const ProfileClient = () => {
                 </details>
               </div>
             </div>
+
+            {/* ---------- Attendance Summary (below the profile card) ---------- */}
+            <UserAttendanceSummary userId={userId} />
           </div>
 
           {/* Right Column */}
           <div className="lg:col-span-2 space-y-6">
+            {
+              <div className="flex gap-3">
+                {!isEditing ? (
+                  <button
+                    onClick={() => {
+                      const p = user?.personalInfo?.presentAddress || "";
+                      const q = user?.personalInfo?.permanentAddress || "";
+                      setSameAsPresent(!!p && p === q);
+                      setIsEditing(true);
+                    }}
+                    className="flex items-center gap-2 bg-[#994D35] text-white px-5 py-2.5 rounded-lg hover:bg-[#D3A16D] transition-all duration-300 hover:scale-105 shadow-md"
+                  >
+                    <FaEdit />
+                    <span>Edit Profile</span>
+                  </button>
+                ) : (
+                  <div className="hidden lg:flex gap-3">
+                    <button
+                      onClick={handleCancel}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 bg-gray-300 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-400 transition-all duration-300"
+                    >
+                      <FaTimes />
+                      <span>Cancel</span>
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="flex items-center gap-2 bg-[#3D444C] text-[#E7E3D8] px-5 py-2.5 rounded-lg hover:bg-[#994D35] transition-all duration-300 hover:scale-105 shadow-md disabled:opacity-70"
+                    >
+                      {isSaving ? (
+                        <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
+                      ) : (
+                        <FaSave />
+                      )}
+                      <span>{isSaving ? "Saving..." : "Save Changes"}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            }
             {/* Personal Information */}
             <div
               id="profile-personal"

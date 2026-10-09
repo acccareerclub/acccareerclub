@@ -10,11 +10,20 @@ import {
   FaArrowRight,
   FaQrcode 
 } from "react-icons/fa";
+import { FaUsersBetweenLines } from "react-icons/fa6";
 import { TiUserDelete } from "react-icons/ti";
 
 const AppSettingsClient = () => {
   // Settings items with icons, descriptions, and links
   const settingsItems = [
+    {
+      id: "attendance-report",
+      title: "Attendance Report",
+      description: "View download and analyze attendance data.",
+      icon: FaUsersBetweenLines,
+      color: "#996D39",
+      link: "/dashboard/settings/attendance-report",
+    },
     {
       id: "designation",
       title: "Designation Settings",

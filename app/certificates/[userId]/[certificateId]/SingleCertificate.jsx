@@ -12,6 +12,7 @@ import {
   FaArrowLeft,
   FaExternalLinkAlt,
   FaCheckCircle,
+  FaLock,
 } from "react-icons/fa";
 
 // ==========================================
@@ -395,6 +396,150 @@ const SingleCertificate = ({ userId, certificateId }) => {
               The certificate you're looking for isn't available or doesn't
               belong to your account.
             </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // UNPUBLISHED STATE — block individual view
+  // ==========================================
+  if (cert.published === false) {
+    return (
+      <div
+        className="min-h-screen py-8 px-4 sm:px-6 lg:px-8"
+        style={{ background: COLORS.bg }}
+      >
+        <div className="max-w-5xl mx-auto">
+          {/* Back link */}
+          <Link
+            href={`/certificates/${userId}`}
+            className="inline-flex items-center gap-1.5 text-sm mb-6 hover:underline"
+            style={{ color: COLORS.primary }}
+          >
+            <FaArrowLeft size={11} /> Back to My Certificates
+          </Link>
+
+          {/* Header */}
+          <div className="mb-6">
+            <h1
+              className="text-2xl sm:text-3xl font-bold mb-1"
+              style={{ color: COLORS.primary }}
+            >
+              {cert.title}
+            </h1>
+            <p
+              className="text-xs font-mono"
+              style={{ color: COLORS.accentDark }}
+            >
+              {cert.certificateId}
+            </p>
+          </div>
+
+          {/* Blurred certificate preview + overlay */}
+          <div
+            className="relative rounded-2xl overflow-hidden shadow-lg"
+            style={{ background: COLORS.card }}
+          >
+            {/* Blurred preview */}
+            <div
+              className="pointer-events-none select-none"
+              style={{
+                filter: "blur(10px)",
+                transform: "scale(1.02)",
+                opacity: 0.6,
+              }}
+              aria-hidden="true"
+            >
+              <div className="p-3 sm:p-5">
+                <CertificateDisplay cert={cert} />
+              </div>
+            </div>
+
+            {/* Overlay */}
+            <div
+              className="absolute inset-0 flex items-center justify-center p-4 sm:p-8"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(254,243,199,0.75), rgba(231,227,216,0.92))",
+                backdropFilter: "blur(6px)",
+              }}
+            >
+              <div
+                className="max-w-xl w-full rounded-2xl p-6 sm:p-8 border-2 shadow-xl text-center"
+                style={{
+                  background: "#FFFFFF",
+                  borderColor: "#FCD34D",
+                }}
+              >
+                <div
+                  className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
+                  style={{ background: "#FEF3C7" }}
+                >
+                  <FaLock size={28} style={{ color: "#B45309" }} />
+                </div>
+
+                <h2
+                  className="text-xl sm:text-2xl font-bold mb-3"
+                  style={{ color: "#78350F" }}
+                >
+                  Certificate Not Published
+                </h2>
+
+                <p
+                  className="text-sm leading-relaxed mb-4"
+                  style={{ color: "#78350F" }}
+                >
+                  Your certificate ID{" "}
+                  <span
+                    className="font-mono font-bold px-2 py-0.5 rounded"
+                    style={{
+                      background: "#FDE68A",
+                      color: "#78350F",
+                    }}
+                  >
+                    {cert.certificateId}
+                  </span>{" "}
+                  is not published online.
+                </p>
+
+                <p
+                  className="text-sm leading-relaxed mb-4"
+                  style={{ color: "#78350F" }}
+                >
+                  Please contact <strong>Club Prefect</strong>,{" "}
+                  <strong>Assistant Prefect</strong>, or{" "}
+                  <strong>IT Secretary</strong> to collect it manually.
+                </p>
+
+                <div
+                  className="text-[13px] leading-relaxed pt-4 mt-4 border-t"
+                  style={{
+                    borderColor: "#FCD34D",
+                    color: "#78350F",
+                    fontFamily:
+                      '"Noto Sans Bengali", "Hind Siliguri", system-ui, sans-serif',
+                  }}
+                >
+                  আপনার সার্টিফিকেট আইডি{" "}
+                  <span className="font-mono font-semibold">
+                    {cert.certificateId}
+                  </span>{" "}
+                  অনলাইনে প্রকাশ করা হয়নি। ম্যানুয়ালি সংগ্রহ করার জন্য ক্লাব
+                  প্রিফেক্ট, সহকারী প্রিফেক্ট বা আইটি সেক্রেটারির সাথে যোগাযোগ
+                  করুন।
+                </div>
+
+                <Link
+                  href={`/certificates/${userId}`}
+                  className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:opacity-90"
+                  style={{ background: COLORS.primary, color: "#fff" }}
+                >
+                  <FaArrowLeft size={11} /> Back to My Certificates
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

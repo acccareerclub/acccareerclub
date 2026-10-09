@@ -10,6 +10,7 @@ import {
   FaFileSignature,
   FaArrowRight,
   FaPrint,
+  FaLock,
 } from "react-icons/fa";
 
 // ==========================================
@@ -409,7 +410,13 @@ const MyCertificates = ({ userId }) => {
 // ==========================================
 const CertificateCard = ({ cert, userId, onPrint }) => {
   const signatureType = cert.signatureType || "system_generated";
-  const needsSignature = signatureType !== "system_generated";
+const isPublished = cert.published === true;
+
+// ✅ Only show the "requires signature" warning if the certificate
+//    is actually published. Unpublished certificates show the
+//    "collect manually" notice instead — the signature hint is
+//    redundant and confusing in that state.
+const needsSignature = isPublished && signatureType !== "system_generated";
 
   const signatureLabel = (() => {
     if (signatureType === "moderator_signed") return "Moderator";
@@ -426,17 +433,19 @@ const CertificateCard = ({ cert, userId, onPrint }) => {
 
   return (
     <div
-      className="rounded-2xl overflow-hidden shadow-md border transition-all hover:shadow-lg"
+      className="relative rounded-2xl overflow-hidden shadow-md border transition-all hover:shadow-lg"
       style={{ background: COLORS.card, borderColor: "#00000010" }}
     >
       <div
         className="h-1.5 w-full"
         style={{
-          background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.accent})`,
+          background: isPublished
+            ? `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.accent})`
+            : "linear-gradient(90deg, #B45309, #F59E0B)",
         }}
       />
 
-      <div className="p-5">
+      <div className="p-5 relative">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="min-w-0 flex-1">
             <h3
@@ -452,15 +461,29 @@ const CertificateCard = ({ cert, userId, onPrint }) => {
               {cert.certificateId}
             </p>
           </div>
-          <span
-            className="text-[10px] font-semibold px-2 py-1 rounded-full capitalize whitespace-nowrap"
-            style={{
-              background: `${COLORS.accent}25`,
-              color: COLORS.accentDark,
-            }}
-          >
-            {String(cert.certificateType).replace(/_/g, " ")}
-          </span>
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <span
+              className="text-[10px] font-semibold px-2 py-1 rounded-full capitalize whitespace-nowrap"
+              style={{
+                background: `${COLORS.accent}25`,
+                color: COLORS.accentDark,
+              }}
+            >
+              {String(cert.certificateType).replace(/_/g, " ")}
+            </span>
+            {!isPublished && (
+              <span
+                className="text-[10px] font-bold px-2 py-1 rounded-full whitespace-nowrap uppercase tracking-wide"
+                style={{
+                  background: "#FEF3C7",
+                  color: "#92400E",
+                  border: "1px solid #FCD34D",
+                }}
+              >
+                Not Published
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="space-y-1 mb-4">
@@ -529,27 +552,101 @@ const CertificateCard = ({ cert, userId, onPrint }) => {
           </div>
         )}
 
+        {/* Actions row */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Link
-            href={`/certificates/${userId}/${cert.certificateId}`}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
-            style={{ background: COLORS.primary, color: "#fff" }}
-          >
-            View Certificate <FaArrowRight size={10} />
-          </Link>
+          {isPublished ? (
+            <>
+              <Link
+                href={`/certificates/${userId}/${cert.certificateId}`}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                style={{ background: COLORS.primary, color: "#fff" }}
+              >
+                View Certificate <FaArrowRight size={10} />
+              </Link>
 
-          <button
-            onClick={onPrint}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border"
+              <button
+                onClick={onPrint}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border"
+                style={{
+                  borderColor: `${COLORS.accent}80`,
+                  color: COLORS.accentDark,
+                  background: `${COLORS.accent}10`,
+                }}
+              >
+                <FaPrint size={10} /> Quick Print
+              </button>
+            </>
+          ) : (
+            <div className="w-full">
+              {/* Placeholder button — disabled-looking */}
+              <div
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold w-fit opacity-60 cursor-not-allowed"
+                style={{
+                  background: "#E5E7EB",
+                  color: "#6B7280",
+                }}
+              >
+                <FaLock size={10} /> View Locked
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Unpublished overlay banner ── */}
+        {!isPublished && (
+          <div
+            className="mt-4 rounded-xl p-4 border flex items-start gap-3"
             style={{
-              borderColor: `${COLORS.accent}80`,
-              color: COLORS.accentDark,
-              background: `${COLORS.accent}10`,
+              background: "rgba(254, 243, 199, 0.5)",
+              borderColor: "#FCD34D",
+              backdropFilter: "blur(4px)",
             }}
           >
-            <FaPrint size={10} /> Quick Print
-          </button>
-        </div>
+            <FaExclamationTriangle
+              className="flex-shrink-0 mt-0.5"
+              style={{ color: "#B45309" }}
+              size={18}
+            />
+            <div
+              className="text-xs leading-relaxed"
+              style={{ color: "#78350F" }}
+            >
+              <p className="font-bold">
+                Your certificate ID{" "}
+                <span
+                  className="font-mono px-1.5 py-0.5 rounded"
+                  style={{
+                    background: "#FDE68A",
+                    color: "#78350F",
+                  }}
+                >
+                  {cert.certificateId}
+                </span>{" "}
+                is not published online.
+              </p>
+              <p className="mt-1">
+                Please contact Club Prefect, Assistant Prefect, or IT Secretary
+                to collect it manually.
+              </p>
+              <p
+                className="mt-2 pt-2 border-t"
+                style={{
+                  borderColor: "#FCD34D",
+                  fontFamily:
+                    '"Noto Sans Bengali", "Hind Siliguri", system-ui, sans-serif',
+                }}
+              >
+                আপনার সার্টিফিকেট আইডি{" "}
+                <span className="font-mono font-semibold">
+                  {cert.certificateId}
+                </span>{" "}
+                অনলাইনে প্রকাশ করা হয়নি। ম্যানুয়ালি সংগ্রহ করার জন্য ক্লাব
+                প্রিফেক্ট, সহকারী প্রিফেক্ট বা আইটি সেক্রেটারির সাথে যোগাযোগ
+                করুন।
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

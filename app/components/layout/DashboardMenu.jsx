@@ -89,7 +89,7 @@ const DashboardMenu = () => {
     },
     {
       id: "settings",
-      label: "App Settings",
+      label: "More",
       icon: FaCog,
       href: "/dashboard/settings",
     },
