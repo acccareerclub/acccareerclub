@@ -1,3 +1,4 @@
+// app/layout.js
 import { Geist, Geist_Mono, Saira, Playfair_Display, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "./components/layout/Header";
@@ -19,7 +20,7 @@ const saira = Saira({
   subsets: ["latin"],
   variable: "--font-saira",
   weight: ["400", "500", "600", "700"],
-})
+});
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -34,6 +35,7 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   display: "swap",
 });
+
 export const metadata = {
   manifest: "/manifest.json",
   title: "ACC Career Club",
@@ -49,14 +51,13 @@ export default function RootLayout({ children }) {
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          <div>
-            <Header />
-          </div>
-          <div className="min-h-screen">{children}</div>
-          <div>
-            <Footer />
-          </div>
+          <Header />
+          <main className="flex-1 min-h-screen">{children}</main>
+          <Footer />
           <ToastProvider />
+
+          {/* Spacer for the fixed mobile bottom bar — only on mobile */}
+          <div className="md:hidden h-14" aria-hidden="true" />
         </AuthProvider>
       </body>
     </html>

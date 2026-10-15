@@ -19,7 +19,7 @@ export async function GET(request) {
           success: false,
           message: "Not authenticated",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -34,7 +34,7 @@ export async function GET(request) {
           success: false,
           message: "Invalid token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -50,7 +50,7 @@ export async function GET(request) {
           success: false,
           message: "User not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -61,7 +61,7 @@ export async function GET(request) {
           success: false,
           message: "Account deactivated",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -72,7 +72,7 @@ export async function GET(request) {
           success: false,
           message: "Session expired. Please login again.",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -91,6 +91,7 @@ export async function GET(request) {
         isActive: user.isActive,
         noticeMail: user.noticeMail,
         personalInfo: user.personalInfo || {},
+        profilePicture: user.personalInfo?.profilePicture || null,
         guardianInfo: user.guardianInfo || {},
         academicInfo: user.academicInfo || {},
         skills: user.skills || [],
@@ -110,7 +111,7 @@ export async function GET(request) {
         message: "Failed to get user data",
         error: error.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -131,7 +132,7 @@ export async function PUT(request) {
           success: false,
           message: "Not authenticated",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -144,7 +145,7 @@ export async function PUT(request) {
           success: false,
           message: "Invalid token",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -160,7 +161,7 @@ export async function PUT(request) {
           success: false,
           message: "User not found",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -171,7 +172,7 @@ export async function PUT(request) {
           success: false,
           message: "Account deactivated",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -182,7 +183,7 @@ export async function PUT(request) {
           success: false,
           message: "Session expired. Please login again.",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -191,17 +192,17 @@ export async function PUT(request) {
 
     // Fields that can be updated
     const allowedFields = [
-      'fullName',
-      'phone',
-      'department',
-      'personalInfo',
-      'guardianInfo',
-      'academicInfo',
-      'skills',
-      'interests',
-      'experience',
-      'careerClubInfo',
-      'noticeMail'
+      "fullName",
+      "phone",
+      "department",
+      "personalInfo",
+      "guardianInfo",
+      "academicInfo",
+      "skills",
+      "interests",
+      "experience",
+      "careerClubInfo",
+      "noticeMail",
     ];
 
     // Update only allowed fields
@@ -219,7 +220,7 @@ export async function PUT(request) {
           success: false,
           message: "No valid fields to update",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -239,6 +240,7 @@ export async function PUT(request) {
       isActive: user.isActive,
       noticeMail: user.noticeMail,
       personalInfo: user.personalInfo || {},
+      profilePicture: user.personalInfo?.profilePicture || null,
       guardianInfo: user.guardianInfo || {},
       academicInfo: user.academicInfo || {},
       skills: user.skills || [],
@@ -255,16 +257,16 @@ export async function PUT(request) {
       message: "Profile updated successfully",
       user: userData,
     });
-
   } catch (error) {
     console.error("Update user error:", error);
     return NextResponse.json(
       {
         success: false,
         message: "Failed to update profile",
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        error:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
