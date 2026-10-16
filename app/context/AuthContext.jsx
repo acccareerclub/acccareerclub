@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line
   }, []);
 
-
   const checkAuth = async () => {
     try {
       const response = await fetch("/api/auth/me", {
@@ -67,20 +66,28 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const response = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ identifier, password }), // Changed from email to identifier
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password }),
         credentials: "include",
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setUser(data.user);
+        // ✅ Re-fetch full user from /api/auth/me so the shape matches refresh
+        const meRes = await fetch("/api/auth/me", { credentials: "include" });
+        const meData = await meRes.json();
+
+        if (meData.success) {
+          setUser(meData.user);
+        } else {
+          // fallback to login response if /me fails
+          setUser(data.user);
+        }
+
         setIsAuthenticated(true);
         router.push("/");
-        return { success: true, user: data.user };
+        return { success: true, user: meData.user || data.user };
       } else {
         toast.error(data.message || "Login failed");
         return { success: false, error: data.message };

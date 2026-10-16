@@ -14,6 +14,7 @@ import {
   FaMapMarkerAlt,
   FaArrowRight,
   FaHeart,
+  FaUserPlus,
 } from "react-icons/fa";
 import Logo from "../../assets/logo/Careerclublogo.png";
 
@@ -35,7 +36,7 @@ const Footer = () => {
     { name: "Companies", href: "/companies" },
     { name: "Sessions", href: "/sessions" },
     { name: "Events", href: "/events" },
-    { name: "Articles", href: "/articles" },  
+    { name: "Articles", href: "/articles" },
   ];
 
   const supportLinks = [
@@ -77,7 +78,7 @@ const Footer = () => {
               professional development, and networking resources.
             </p>
 
-            {/* Social Links - Using Link for external links (next/link doesn't support external, so using <a> is correct) */}
+            {/* Social Links */}
             <div className="flex space-x-2 pt-2">
               {socialLinks.map((social) => (
                 <a
@@ -140,13 +141,42 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Column 4 - Contact Info & Articles */}
-          <div>
-            <h3 className="text-lg font-semibold text-[#E7E3D8] mb-4 relative">
-              Get in Touch
-              <span className="absolute -bottom-1 left-0 w-8 h-0.5 bg-[#D3A16D]"></span>
-            </h3>
+          {/* Column 4 - Join CTA + Contact Info */}
+          <div className="space-y-6">
+            {/* Animated Join CTA Card */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#D3A16D] via-[#e0b98a] to-[#D3A16D] p-5 shadow-xl">
+              {/* Shimmer sweep */}
+              <div className="pointer-events-none absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12"></div>
 
+              {/* Floating dots */}
+              <div className="pointer-events-none absolute top-3 left-3 w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce-slow"></div>
+              <div className="pointer-events-none absolute bottom-3 left-1/3 w-1 h-1 bg-white/40 rounded-full animate-bounce-slow delay-300"></div>
+              <div className="pointer-events-none absolute top-4 right-4 w-1.5 h-1.5 bg-white/50 rounded-full animate-bounce-slow delay-700"></div>
+
+              <div className="relative z-10 space-y-3">
+                <div className="flex items-center gap-2">
+                  <FaUserPlus className="text-xl text-[#3D444C] animate-wiggle" />
+                  <p className="text-[#3D444C] font-bold text-base leading-tight">
+                    Join today in ACC Career Club
+                  </p>
+                </div>
+
+                <p className="text-[#3D444C]/80 text-xs leading-relaxed">
+                  Unlock opportunities, build your future, and grow with us.
+                </p>
+
+                <Link
+                  href="/signup"
+                  className="group relative inline-flex items-center gap-2 bg-[#3D444C] text-[#E7E3D8] font-semibold text-sm px-5 py-2.5 rounded-full overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#3D444C]/50 active:scale-95"
+                >
+                  <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent"></span>
+                  <span className="relative z-10">Sign Up Now</span>
+                  <FaArrowRight className="relative z-10 text-xs group-hover:translate-x-1 transition-transform duration-300" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Contact Info */}
             <div className="space-y-3">
               <div className="flex items-start space-x-3 group">
                 <FaMapMarkerAlt className="text-[#D3A16D] text-lg mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform duration-200" />
@@ -196,7 +226,6 @@ const Footer = () => {
             >
               Terms
             </Link>
-            
           </div>
         </div>
       </div>

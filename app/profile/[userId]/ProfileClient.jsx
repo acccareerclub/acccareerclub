@@ -2781,7 +2781,7 @@ const ProfileClient = () => {
           FLOATING ACTION BAR (Edit Mode)
           ============================================ */}
       {isEditing && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
+        <div className="fixed bottom-10 left-0 right-0 z-40 pointer-events-none">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
             <div className="pointer-events-auto bg-[#3D444C] rounded-2xl shadow-2xl border border-[#D3A16D]/30 p-4 sm:p-5 animate-[slideUp_0.3s_ease-out]">
               <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
