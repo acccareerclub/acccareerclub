@@ -105,11 +105,6 @@ export async function POST(request) {
     // Update attendees list (overwrite for simplicity)
     session.sessionAttendees = attendeeIds;
 
-    // Optionally update the session status to "completed" if marking attendance
-    if (markAsAttended && session.sessionStatus === "upcoming") {
-      session.sessionStatus = "completed";
-    }
-
     await session.save();
 
     return NextResponse.json({
