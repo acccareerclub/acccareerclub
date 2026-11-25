@@ -245,7 +245,7 @@ const LoginContent = () => {
                 htmlFor="identifier"
                 className="block text-sm font-medium text-[#3D444C] mb-2"
               >
-                Email or Student ID{" "}
+                College ID or Email{" "}
                 <span className="text-xs text-gray-400">(both accepted)</span>
               </label>
               <div className="relative">
@@ -262,7 +262,7 @@ const LoginContent = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="w-full text-gray-500 pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent transition-all duration-200 bg-[#E7E3D8]/30"
-                  placeholder="student@example.com or 521017"
+                  placeholder="521017 or student@example.com"
                   required
                   disabled={isLoading}
                   autoComplete="username"
@@ -271,7 +271,7 @@ const LoginContent = () => {
               <p className="text-xs text-gray-400 mt-1">
                 {identifier
                   ? `Logging in with: ${inputType}`
-                  : "Enter your email or student ID"}
+                  : "Enter your College ID or Email"}
               </p>
             </div>
 

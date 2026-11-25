@@ -804,20 +804,32 @@ export default function DesignationClient() {
               <form onSubmit={handleAddRole} className="space-y-4">
                 <input
                   type="text"
+                  placeholder="Display Name (e.g. Event Secretary)"
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent outline-none transition-all"
+                  value={newRoleName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewRoleName(val);
+                    // Automatically generate the role key based on the display name
+                    setNewRoleKey(
+                      val
+                        .toLowerCase()
+                        .replace(/&/g, "and") // Replace '&' with 'and'
+                        .replace(/[^a-z0-9]+/g, "_") // Replace spaces/special chars with '_'
+                        .replace(/^_|_$/g, ""), // Remove trailing or leading underscores
+                    );
+                  }}
+                  disabled={isAddingRole}
+                />
+                <input
+                  type="text"
                   placeholder="Role Username (e.g. event_sec)"
                   className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent outline-none transition-all"
                   value={newRoleKey}
                   onChange={(e) => setNewRoleKey(e.target.value)}
                   disabled={isAddingRole}
                 />
-                <input
-                  type="text"
-                  placeholder="Display Name (e.g. Event Secretary)"
-                  className="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-[#D3A16D] focus:border-transparent outline-none transition-all"
-                  value={newRoleName}
-                  onChange={(e) => setNewRoleName(e.target.value)}
-                  disabled={isAddingRole}
-                />
+
                 <button
                   type="submit"
                   disabled={isAddingRole}
